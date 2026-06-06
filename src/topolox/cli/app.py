@@ -79,14 +79,14 @@ def index(
     from topolox.config import load_settings
     from topolox.graph.kuzu_store import KuzuGraphStore
     from topolox.index.indexer import Indexer
-    from topolox.vectors.embedder import NullEmbedder
+    from topolox.vectors.embedder import default_embedder
     from topolox.vectors.lancedb_store import LanceDBVectorStore
 
     data_dir = root / ".topolox"
     data_dir.mkdir(parents=True, exist_ok=True)
     graph = KuzuGraphStore(data_dir / "graph.kuzu")
     vectors = LanceDBVectorStore(data_dir / "vectors.lance")
-    indexer = Indexer(load_settings(), graph, vectors, NullEmbedder())
+    indexer = Indexer(load_settings(), graph, vectors, default_embedder())
     try:
         stats = indexer.build(root)
     finally:
@@ -151,7 +151,35 @@ def prune(
     budget: Annotated[int, typer.Option(help="Token budget.")] = 8000,
 ) -> None:
     """Return pruned context for a prompt."""
-    typer.echo(_NOT_YET.format(phase="Phase 2"))
+    from topolox.graph.kuzu_store import KuzuGraphStore
+    from topolox.query.pruner import ContextPruner
+    from topolox.vectors.embedder import default_embedder
+    from topolox.vectors.lancedb_store import LanceDBVectorStore
+
+    data_dir = Path(".topolox")
+    if not (data_dir / "graph.kuzu").exists():
+        typer.echo("error: no index found here. Run 'topolox index .' first.", err=True)
+        raise typer.Exit(code=1)
+
+    graph = KuzuGraphStore(data_dir / "graph.kuzu")
+    vectors = LanceDBVectorStore(data_dir / "vectors.lance")
+    try:
+        context = ContextPruner(graph, vectors, default_embedder()).prune(
+            prompt, token_budget=budget
+        )
+    finally:
+        graph.close()
+        vectors.close()
+
+    typer.echo(
+        f"Context for {prompt!r} "
+        f"(~{context.token_estimate} tokens, {len(context.symbols)} symbols)"
+    )
+    for symbol in context.symbols:
+        location = f"  {symbol.path}" if symbol.path else ""
+        typer.echo(f"    [{symbol.score:.2f}] {symbol.name}{location}")
+    if not context.symbols:
+        typer.echo("    (no matches — was the index built with the [embeddings] extra?)")
 
 
 @app.command()
@@ -160,7 +188,27 @@ def blast(
     depth: Annotated[int, typer.Option(help="Max traversal depth.")] = 3,
 ) -> None:
     """Simulate the blast radius of changing files."""
-    typer.echo(_NOT_YET.format(phase="Phase 2"))
+    from topolox.graph.kuzu_store import KuzuGraphStore
+    from topolox.query.blast_radius import BlastRadiusService
+
+    graph_db = Path(".topolox") / "graph.kuzu"
+    if not graph_db.exists():
+        typer.echo("error: no index found here. Run 'topolox index .' first.", err=True)
+        raise typer.Exit(code=1)
+
+    graph = KuzuGraphStore(graph_db)
+    try:
+        report = BlastRadiusService(graph).simulate(files, max_depth=depth)
+    finally:
+        graph.close()
+
+    typer.echo(f"Changed: {', '.join(report.changed)}")
+    typer.echo(f"Impacted files ({len(report.impacted_files)}, depth {report.max_depth}):")
+    for impacted in report.impacted_files:
+        marker = "  [test]" if impacted in report.impacted_tests else ""
+        typer.echo(f"    {impacted}{marker}")
+    if not report.impacted_files:
+        typer.echo("    (none)")
 
 
 @app.command()

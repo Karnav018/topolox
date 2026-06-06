@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Query engine (Phase 2): blast-radius simulation (transitive downstream importers), LanceDB vector search, a `FastEmbedEmbedder` (local ONNX embeddings via the `[embeddings]` extra), and a hybrid `ContextPruner` (vector seeds → graph expansion → token-budget cap). Wired as `topolox blast` and `topolox prune`; `topolox index` now uses real embeddings when `fastembed` is installed.
 - Storage & indexing (Phase 1): embedded Kùzu graph store (`Symbol` nodes + `Rel` edges, idempotent MERGE upserts) and LanceDB vector store behind their ports; `Indexer.build()` wiring the parser pool into both stores. `topolox index` now persists to `.topolox/`, and `topolox deps <file>` reports module-level dependencies/dependents.
 - Core parser (Phase 1): gitignore-aware file discovery, tree-sitter symbol/edge extraction (functions, classes, methods, imports), a picklable worker, and a `ProcessPoolExecutor` pool. `topolox index --dry-run` parses a repo and prints node/edge counts.
 - Project scaffold: `src/` layout, packaging (`pyproject.toml`), and tooling (uv, ruff, mypy, pytest).

@@ -52,6 +52,14 @@ class LanceDBVectorStore:
         if self._table is not None:
             self._table.delete(f"path = '{path}'")
 
+    def _ensure_table(self) -> Any:
+        if self._table is None:
+            try:
+                self._table = self._ensure_db().open_table(self._table_name)
+            except Exception:
+                return None
+        return self._table
+
     def search(
         self,
         vector: Sequence[float],
@@ -59,7 +67,23 @@ class LanceDBVectorStore:
         limit: int = 20,
         where: str | None = None,
     ) -> list[VectorHit]:
-        raise NotImplementedError("Phase 2: LanceDB search")
+        table = self._ensure_table()
+        if table is None:
+            return []
+        query = table.search(list(vector)).limit(limit)
+        if where:
+            query = query.where(where)
+        hits: list[VectorHit] = []
+        for row in query.to_list():
+            distance = float(row.get("_distance", 0.0))
+            hits.append(
+                VectorHit(
+                    id=str(row["id"]),
+                    path=str(row.get("path", "") or ""),
+                    score=1.0 / (1.0 + distance),
+                )
+            )
+        return hits
 
     def close(self) -> None:
         self._table = None
