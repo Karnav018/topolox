@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Collection, Mapping, Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
+from topolox.graph.schema import SCHEMA_STATEMENTS
 from topolox.graph.store import Direction
 
 if TYPE_CHECKING:
@@ -14,21 +15,73 @@ if TYPE_CHECKING:
     from topolox.models.graph import ParseResult
     from topolox.models.nodes import SymbolNode
 
+_MERGE_NODE = """
+MERGE (s:Symbol {id: $id})
+SET s.kind = $kind,
+    s.name = $name,
+    s.qualified_name = $qualified_name,
+    s.path = $path,
+    s.language = $language,
+    s.signature = $signature,
+    s.start_line = $start_line,
+    s.end_line = $end_line
+"""
+
+_MERGE_PLACEHOLDER = "MERGE (s:Symbol {id: $id})"
+
+_MERGE_REL = """
+MATCH (a:Symbol {id: $src}), (b:Symbol {id: $dst})
+MERGE (a)-[r:Rel {kind: $kind}]->(b)
+SET r.weight = $weight
+"""
+
 
 class KuzuGraphStore:
     """Embedded Kùzu adapter implementing the ``GraphStore`` protocol."""
 
     def __init__(self, db_path: Path) -> None:
-        self._db_path = db_path
+        import kuzu
+
+        self._db: Any = kuzu.Database(str(db_path))
+        self._conn: Any = kuzu.Connection(self._db)
 
     def init_schema(self) -> None:
-        raise NotImplementedError("Phase 1: Kùzu schema")
+        for statement in SCHEMA_STATEMENTS:
+            self._conn.execute(statement)
 
     def upsert(self, fragment: ParseResult) -> None:
-        raise NotImplementedError("Phase 1: Kùzu upsert")
+        for node in fragment.nodes:
+            self._conn.execute(
+                _MERGE_NODE,
+                parameters={
+                    "id": node.id,
+                    "kind": node.kind.value,
+                    "name": node.name,
+                    "qualified_name": node.qualified_name,
+                    "path": node.path,
+                    "language": node.language,
+                    "signature": node.signature or "",
+                    "start_line": node.span.start_line,
+                    "end_line": node.span.end_line,
+                },
+            )
+        for edge in fragment.edges:
+            self._conn.execute(_MERGE_PLACEHOLDER, parameters={"id": edge.dst_id})
+            self._conn.execute(
+                _MERGE_REL,
+                parameters={
+                    "src": edge.src_id,
+                    "dst": edge.dst_id,
+                    "kind": edge.kind.value,
+                    "weight": edge.weight,
+                },
+            )
 
     def delete_file(self, path: str) -> None:
-        raise NotImplementedError("Phase 2: Kùzu delete_file")
+        self._conn.execute(
+            "MATCH (s:Symbol {path: $path}) DETACH DELETE s",
+            parameters={"path": path},
+        )
 
     def neighbors(
         self,
@@ -53,7 +106,15 @@ class KuzuGraphStore:
         cypher: str,
         params: Mapping[str, object] | None = None,
     ) -> list[dict[str, object]]:
-        raise NotImplementedError("Phase 1: Kùzu query")
+        result = self._conn.execute(cypher, parameters=dict(params) if params else {})
+        columns: list[str] = list(result.get_column_names())
+        rows: list[dict[str, object]] = []
+        while result.has_next():
+            rows.append(dict(zip(columns, result.get_next(), strict=False)))
+        return rows
 
     def close(self) -> None:
-        return None
+        for obj in (self._conn, self._db):
+            closer = getattr(obj, "close", None)
+            if callable(closer):
+                closer()

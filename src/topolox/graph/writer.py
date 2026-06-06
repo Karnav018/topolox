@@ -1,4 +1,4 @@
-"""Translate :class:`ParseResult` fragments into idempotent Kùzu upserts."""
+"""Translate :class:`ParseResult` fragments into idempotent graph upserts."""
 
 from __future__ import annotations
 
@@ -10,5 +10,5 @@ if TYPE_CHECKING:
 
 
 def write_fragment(store: GraphStore, fragment: ParseResult) -> None:
-    """Upsert a single parsed file's nodes and edges into the graph. Phase 1."""
-    raise NotImplementedError("Phase 1: graph writer")
+    """Upsert a single parsed file's nodes and edges into the graph."""
+    store.upsert(fragment)

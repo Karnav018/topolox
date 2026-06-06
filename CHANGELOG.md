@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Storage & indexing (Phase 1): embedded Kùzu graph store (`Symbol` nodes + `Rel` edges, idempotent MERGE upserts) and LanceDB vector store behind their ports; `Indexer.build()` wiring the parser pool into both stores. `topolox index` now persists to `.topolox/`, and `topolox deps <file>` reports module-level dependencies/dependents.
 - Core parser (Phase 1): gitignore-aware file discovery, tree-sitter symbol/edge extraction (functions, classes, methods, imports), a picklable worker, and a `ProcessPoolExecutor` pool. `topolox index --dry-run` parses a repo and prints node/edge counts.
 - Project scaffold: `src/` layout, packaging (`pyproject.toml`), and tooling (uv, ruff, mypy, pytest).
 - Core data contracts (`SymbolNode`, `Edge`, `ParseResult`, query DTOs) and store ports (`GraphStore`, `VectorStore`, `Embedder`).

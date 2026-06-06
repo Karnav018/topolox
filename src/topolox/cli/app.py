@@ -49,34 +49,53 @@ def index(
     ] = False,
 ) -> None:
     """Index a repository into the graph + vector store."""
-    if not dry_run:
-        typer.echo(_NOT_YET.format(phase="Phase 1 (storage)"))
-        return
-
-    from topolox.parsing.discovery import discover_files
-    from topolox.parsing.pool import parse_repo
-
     root = path.resolve()
     if not root.exists():
         typer.echo(f"error: path does not exist: {root}", err=True)
         raise typer.Exit(code=1)
 
-    files = discover_files(root)
-    total_nodes = 0
-    total_edges = 0
-    errors = 0
-    for result in parse_repo(files, root=root):
-        if result.error:
-            errors += 1
-            typer.echo(f"  ! {result.path}: {result.error}", err=True)
-            continue
-        total_nodes += len(result.nodes)
-        total_edges += len(result.edges)
-        typer.echo(f"  {result.path}: {len(result.nodes)} nodes, {len(result.edges)} edges")
-    summary = f"Parsed {len(files)} file(s) -> {total_nodes} nodes, {total_edges} edges"
-    if errors:
-        summary += f", {errors} error(s)"
-    typer.echo(summary)
+    if dry_run:
+        from topolox.parsing.discovery import discover_files
+        from topolox.parsing.pool import parse_repo
+
+        files = discover_files(root)
+        total_nodes = 0
+        total_edges = 0
+        errors = 0
+        for result in parse_repo(files, root=root):
+            if result.error:
+                errors += 1
+                typer.echo(f"  ! {result.path}: {result.error}", err=True)
+                continue
+            total_nodes += len(result.nodes)
+            total_edges += len(result.edges)
+            typer.echo(f"  {result.path}: {len(result.nodes)} nodes, {len(result.edges)} edges")
+        summary = f"Parsed {len(files)} file(s) -> {total_nodes} nodes, {total_edges} edges"
+        if errors:
+            summary += f", {errors} error(s)"
+        typer.echo(summary)
+        return
+
+    from topolox.config import load_settings
+    from topolox.graph.kuzu_store import KuzuGraphStore
+    from topolox.index.indexer import Indexer
+    from topolox.vectors.embedder import NullEmbedder
+    from topolox.vectors.lancedb_store import LanceDBVectorStore
+
+    data_dir = root / ".topolox"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    graph = KuzuGraphStore(data_dir / "graph.kuzu")
+    vectors = LanceDBVectorStore(data_dir / "vectors.lance")
+    indexer = Indexer(load_settings(), graph, vectors, NullEmbedder())
+    try:
+        stats = indexer.build(root)
+    finally:
+        graph.close()
+        vectors.close()
+    typer.echo(
+        f"Indexed {stats.files} file(s) -> {stats.nodes} nodes, {stats.edges} edges "
+        f"in {stats.seconds:.2f}s ({stats.errors} error(s)) -> {data_dir}"
+    )
 
 
 @app.command()
@@ -99,7 +118,31 @@ def deps(
     depth: Annotated[int, typer.Option(help="Traversal depth.")] = 1,
 ) -> None:
     """Show dependencies and dependents of a file."""
-    typer.echo(_NOT_YET.format(phase="Phase 2"))
+    from topolox.graph.kuzu_store import KuzuGraphStore
+    from topolox.query.dependencies import DependencyService
+
+    graph_db = Path(".topolox") / "graph.kuzu"
+    if not graph_db.exists():
+        typer.echo("error: no index found here. Run 'topolox index .' first.", err=True)
+        raise typer.Exit(code=1)
+
+    graph = KuzuGraphStore(graph_db)
+    try:
+        result = DependencyService(graph).of_file(file, depth=depth)
+    finally:
+        graph.close()
+
+    typer.echo(file)
+    typer.echo("  imports:")
+    for dependency in result.dependencies:
+        typer.echo(f"    -> {dependency.name}")
+    if not result.dependencies:
+        typer.echo("    (none)")
+    typer.echo("  imported by:")
+    for dependent in result.dependents:
+        typer.echo(f"    <- {dependent.path or dependent.name}")
+    if not result.dependents:
+        typer.echo("    (none)")
 
 
 @app.command()
