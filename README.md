@@ -25,6 +25,25 @@ discover → parse (multiprocessing tree-sitter) → ParseResult
    ┌ watchdog daemon patches the graph live on every file save ┐
 ```
 
+## Topolox vs. Graphify
+
+Graphify pioneered "drop in a folder, get a knowledge graph." Topolox takes that idea in a different direction: an **always-on, agent-native engine for code**. They're built for different jobs.
+
+| | **Graphify** | **Topolox** |
+| :--- | :--- | :--- |
+| **Form factor** | A Claude Code *skill* (`/graphify`) | A standalone *service*: CLI + MCP server + daemon |
+| **Graph build** | AST **+ LLM extraction** (Claude subagents / Gemini) | **Pure deterministic** AST (multiprocessing tree-sitter) |
+| **When the LLM runs** | At **build** time — spends tokens on every build | Only at **query** time (the consuming agent); build is **zero-token** |
+| **Storage** | Static `graph.json` + in-memory NetworkX | Embedded **Kùzu** (graph) + **LanceDB** (vectors), on disk |
+| **Retrieval** | Lexical substring + IDF + BFS/DFS traversal | **Vector** semantic search + graph traversal (hybrid) |
+| **Live updates** | Opt-in `--watch` / git hook / manual `--update` | **watchdog daemon**, ms-level incremental patches |
+| **Agent access** | Optional MCP (7 read-only tools) + Markdown reports | **MCP-native** (4 tools), `mcp install` for every agent |
+| **Inputs** | Code **+ docs + papers + images + video** | Code — 14 languages richly, 300+ at the file level |
+| **Signature features** | Community detection, "god nodes", multi-modal RAG | Blast radius, dependency maps, context pruner |
+| **Concurrency** | Single graph, in-memory | Multiprocessing + asyncio, embedded DBs |
+
+**In short:** Graphify is a broad, **multi-modal, LLM-enriched** knowledge-graph builder you invoke as a skill — its graph is *richer* on inferred relationships. Topolox is a narrow, **deterministic, zero-token, always-live code engine** that any MCP agent reads from — *faster, cheaper, and instantly rebuildable*. That's the trade Topolox makes to be an always-on backend.
+
 ## Two ways to use it
 
 1. **Invisible backend (MCP).** Index once, register with your agent, and any MCP client silently pulls grounded, cheap context.
@@ -33,10 +52,7 @@ discover → parse (multiprocessing tree-sitter) → ParseResult
    topolox mcp install      # registers with Claude Code, Cursor, Codex, Gemini CLI, VS Code, ...
    topolox daemon           # keep the graph live in the background
    ```
-2. **The TUI cockpit.** A 3-pane terminal dashboard (agent chat · live knowledge graph · daemon log).
-   ```bash
-   topolox                  # launches the dashboard in the current repo
-   ```
+2. **The TUI cockpit** *(planned — Phase 3).* A 3-pane terminal dashboard (agent chat · live knowledge graph · daemon log), `topolox ui`. See [ROADMAP.md](ROADMAP.md).
 
 ## Supported languages & agents
 
