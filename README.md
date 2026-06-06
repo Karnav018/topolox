@@ -9,7 +9,7 @@
 
 Topolox gives AI coding agents (Claude Code, Cursor) **instant, deep understanding of large codebases**. Instead of burning tokens reading thousands of files, it feeds an agent exactly the context it needs using an embedded **hybrid graph + vector engine** — kept live by a background daemon and exposed over **MCP** and an optional terminal cockpit.
 
-> ⚠️ **Pre-alpha.** The scaffold and contracts are in place; the engine is being built phase by phase. See [ROADMAP.md](ROADMAP.md).
+> ⚠️ **Pre-alpha but usable.** The engine — multiprocessing parser, Kùzu + LanceDB index, query layer, MCP server, daemon, and 14-language support — is built and **on PyPI**. The TUI and benchmarks are next; see [ROADMAP.md](ROADMAP.md).
 
 ## Why
 
@@ -66,13 +66,41 @@ Graphify pioneered "drop in a folder, get a knowledge graph." Topolox takes that
 
 **Agents** — `topolox mcp install` registers the MCP server with **Claude Code, Cursor, OpenAI Codex CLI, Gemini CLI, VS Code, Windsurf, and Claude Desktop** (and any other MCP client — it's a standard stdio MCP server).
 
-## Install (from source)
+## The four tools your agent gets
+
+| Tool | Use it for |
+| :--- | :--- |
+| `get_file_dependencies(path, depth)` | what a file imports, and what imports it |
+| `analyze_blast_radius(changed_files, max_depth)` | which files/tests a change would impact |
+| `prune_context(prompt, token_budget)` | the most relevant symbols/files for a prompt |
+| `search_architecture_graph(query, limit)` | semantic + structural search over the codebase |
+
+Nudge the agent with *"Using topolox, …"* so it reaches for these instead of grepping. `deps` and `blast` are graph-based and most reliable; `search`/`prune` ranking improves with the `[embeddings]` extra.
+
+## CLI
+
+```bash
+topolox index .                 # build / refresh the index in .topolox/
+topolox index --dry-run .       # preview what gets parsed (no writes)
+topolox deps   <file>           # dependencies + dependents of a file
+topolox blast  <file...>        # blast radius of changing file(s)
+topolox prune  "<question>"     # pruned, token-budgeted context
+topolox mcp install [--client claude-code|cursor|codex|gemini|vscode|windsurf|claude-desktop|all]
+topolox mcp serve               # run the MCP server over stdio (agents usually spawn this)
+```
+
+## Install
+
+```bash
+pip install topolox                 # from PyPI  (or: uv tool install topolox)
+pip install 'topolox[embeddings]'   # optional — local embeddings for semantic search / prune
+```
+
+From source:
 
 ```bash
 git clone https://github.com/Karnav018/topolox.git
-cd topolox
-uv sync
-uv run topolox --help
+cd topolox && uv sync && uv run topolox --help
 ```
 
 ## Development
