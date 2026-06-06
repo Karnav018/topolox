@@ -1,0 +1,8 @@
+# Code owners are automatically requested for review on every pull request.
+# Docs: https://docs.github.com/articles/about-code-owners
+#
+# Enable "Require review from Code Owners" in the branch protection rule for
+# `main` to make this approval mandatory before merging.
+
+# @Karnav018 owns the entire repository.
+*       @Karnav018

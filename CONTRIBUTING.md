@@ -35,11 +35,23 @@ uv run pytest                 # tests
 - **New ports go behind a Protocol.** Storage backends implement `GraphStore` / `VectorStore` (see `src/topolox/graph/store.py`, `src/topolox/vectors/store.py`).
 - **Conventional commits** are appreciated (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`).
 
-## Pull requests
+## Pull request flow
 
-1. Fork and branch from `main`.
-2. Make your change with tests.
-3. Ensure the checks above pass.
-4. Open a PR describing the change and linking any related issue.
+`main` is a **protected branch** — every change lands through a pull request that
+the maintainer ([@Karnav018](https://github.com/Karnav018), the code owner) reviews
+and approves. Direct pushes to `main` are disabled.
 
-By contributing you agree your work is licensed under the project's [MIT License](LICENSE) and that you follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+1. **Fork** the repository, then create a feature branch off `main`:
+   ```bash
+   git checkout -b feat/short-description
+   ```
+2. Make your change **with tests**, and add a note under *Unreleased* in `CHANGELOG.md`.
+3. Run the checks above (`ruff`, `mypy`, `pytest`) and make sure they pass.
+4. **Push to your fork** and **open a pull request** against `Karnav018/topolox:main`,
+   describing the change and linking any related issue (e.g. `Closes #123`).
+5. CI runs automatically and the maintainer is auto-requested for review (via
+   [`CODEOWNERS`](.github/CODEOWNERS)). Address any feedback; a maintainer merges
+   once the PR is **approved** and **green**.
+
+By contributing you agree your work is licensed under the project's
+[MIT License](LICENSE) and that you follow the [Code of Conduct](CODE_OF_CONDUCT.md).
