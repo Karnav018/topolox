@@ -50,8 +50,14 @@ Graphify pioneered "drop in a folder, get a knowledge graph." Topolox takes that
    ```bash
    topolox index .
    topolox mcp install      # registers with Claude Code, Cursor, Codex, Gemini CLI, VS Code, ...
-   topolox daemon           # keep the graph live in the background
    ```
+   Then connect your agent — its MCP server reads the index **read-only**, so several agents
+   (Claude Code, Cursor, …) can connect at once. Re-run `topolox index` to refresh.
+
+   > ⚠️ **One writer at a time.** Kùzu lets only one process write the database, so **don't run
+   > `topolox daemon` while an agent is connected** — they'd fight over the lock (`MCP error
+   > -32000: Connection closed`). A combined always-live server (one process that watches *and*
+   > serves over HTTP) is on the [roadmap](ROADMAP.md).
 2. **The TUI cockpit** *(planned — Phase 3).* A 3-pane terminal dashboard (agent chat · live knowledge graph · daemon log), `topolox ui`. See [ROADMAP.md](ROADMAP.md).
 
 ## Supported languages & agents
