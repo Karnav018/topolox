@@ -1,0 +1,3 @@
+"""The graph store: Kùzu adapter behind a backend-agnostic port."""
+
+from __future__ import annotations

@@ -1,0 +1,114 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "topolox"
+version = "0.1.0"
+description = "The topological memory and architecture layer for AI coding agents."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Karnav" }]
+keywords = [
+    "ai",
+    "coding-agents",
+    "mcp",
+    "knowledge-graph",
+    "code-intelligence",
+    "tree-sitter",
+    "kuzu",
+    "lancedb",
+    "claude",
+    "cursor",
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+dependencies = [
+    "kuzu==0.11.3",
+    "lancedb>=0.33,<0.34",
+    "tree-sitter>=0.25,<0.26",
+    "tree-sitter-language-pack>=1.8",
+    "fastmcp>=3.4,<4",
+    "watchdog>=6",
+    "textual>=8.2",
+    "typer>=0.12",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+]
+
+[project.optional-dependencies]
+embeddings = ["fastembed>=0.8"]
+llm = ["anthropic>=0.105"]
+
+[project.scripts]
+topolox = "topolox.cli.app:main"
+topolox-mcp = "topolox.mcp.server:main"
+
+[project.urls]
+Homepage = "https://github.com/Karnav018/topolox"
+Repository = "https://github.com/Karnav018/topolox"
+Issues = "https://github.com/Karnav018/topolox/issues"
+Changelog = "https://github.com/Karnav018/topolox/blob/main/CHANGELOG.md"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/topolox"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+extend-exclude = ["tests/fixtures"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "ASYNC", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/topolox/cli/app.py" = ["B008"]
+"tests/**" = ["S101"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+plugins = ["pydantic.mypy"]
+mypy_path = "src"
+explicit_package_bases = true
+namespace_packages = true
+
+[[tool.mypy.overrides]]
+module = [
+    "kuzu.*",
+    "lancedb.*",
+    "tree_sitter.*",
+    "tree_sitter_language_pack.*",
+    "watchdog.*",
+    "fastembed.*",
+    "fastmcp.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-q"

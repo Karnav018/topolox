@@ -1,0 +1,22 @@
+/* Topolox TUI styles (Phase 3) — tmux-style 3-pane layout. */
+
+#left {
+    width: 2fr;
+    height: 100%;
+    border: round $accent;
+}
+
+#right {
+    width: 3fr;
+    height: 100%;
+}
+
+#graph {
+    height: 1fr;
+    border: round $primary;
+}
+
+#log {
+    height: 1fr;
+    border: round $secondary;
+}

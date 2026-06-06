@@ -1,0 +1,27 @@
+# Topolox data artifacts
+.topolox/
+*.kuzu/
+*.lance/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Environments & tools
+.venv/
+.env
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS & editors
+.DS_Store
+*.swp
+.idea/
+.vscode/
