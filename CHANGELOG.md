@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-06-06
+
+### Fixed
+- Cross-file **dependents and blast radius** now work on `src/`- and monorepo layouts. An import-resolution pass links bare import names (e.g. `app.db`) to the file they actually name (e.g. `apps/api/app/db.py`) when the match is unique, so `analyze_blast_radius` and `get_file_dependencies` traverse the real file graph instead of returning empty.
+
+### Changed
+- The MCP server now ships usage **instructions** and sharper, directive tool descriptions so agents reach for the tools proactively (instead of grepping/reading files).
+
 ### Docs
 - Clarify that a separate `topolox daemon` and an agent's MCP server cannot run at the same time (Kùzu allows a single writer); the README quickstart no longer starts the daemon alongside the agent, and notes the read-only multi-agent model + the planned combined live server.
 
@@ -35,7 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI skeleton (`topolox`) and module stubs for parser, stores, indexer, query, daemon, MCP, and TUI.
 - Open-source project files: README, license, contributing guide, code of conduct, security policy, CI, and issue/PR templates.
 
-[Unreleased]: https://github.com/Karnav018/topolox/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/Karnav018/topolox/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/Karnav018/topolox/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Karnav018/topolox/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Karnav018/topolox/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Karnav018/topolox/releases/tag/v0.1.0

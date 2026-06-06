@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from topolox.graph.kuzu_store import KuzuGraphStore
+from topolox.graph.resolve import resolve_imports
 from topolox.models.edges import Edge, EdgeKind
 from topolox.models.graph import ParseResult
 from topolox.models.nodes import NodeKind, Span, SymbolNode
@@ -56,6 +57,7 @@ def _build_graph(tmp: Path) -> KuzuGraphStore:
     store.upsert(_fragment("app/main.py", "app.main", ["app.auth", "app.db"]))
     store.upsert(_fragment("app/auth.py", "app.auth", ["app.db"]))
     store.upsert(_fragment("app/db.py", "app.db", []))
+    resolve_imports(store)
     return store
 
 
@@ -69,6 +71,24 @@ def test_blast_radius(tmp_path: Path) -> None:
     report = BlastRadiusService(store).simulate(["app/db.py"])
     assert set(report.impacted_files) == {"app/main.py", "app/auth.py"}
     assert report.max_depth >= 1
+    store.close()
+
+
+def test_blast_radius_resolves_package_root(tmp_path: Path) -> None:
+    # src/monorepo layout: file at apps/api/app/db.py is imported as "app.db".
+    store = KuzuGraphStore(tmp_path / "graph.kuzu")
+    store.init_schema()
+    store.upsert(_fragment("apps/api/app/db.py", "apps.api.app.db", []))
+    store.upsert(_fragment("apps/api/app/main.py", "apps.api.app.main", ["app.db"]))
+    store.upsert(
+        _fragment("apps/api/app/routers/forms.py", "apps.api.app.routers.forms", ["app.db"])
+    )
+    resolve_imports(store)
+    report = BlastRadiusService(store).simulate(["apps/api/app/db.py"])
+    assert set(report.impacted_files) == {
+        "apps/api/app/main.py",
+        "apps/api/app/routers/forms.py",
+    }
     store.close()
 
 

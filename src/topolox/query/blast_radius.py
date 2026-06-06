@@ -10,12 +10,7 @@ from topolox.models.query import BlastRadiusReport
 if TYPE_CHECKING:
     from topolox.graph.store import GraphStore
 
-_QUALNAME = "MATCH (s:Symbol {id: $id}) RETURN s.qualified_name AS qualified_name"
-
-_IMPORTERS = (
-    "MATCH (src)-[r:Rel {kind: $kind}]->(t:Symbol {id: $qual}) "
-    "RETURN DISTINCT src.id AS id, src.qualified_name AS qualified_name"
-)
+_IMPORTERS = "MATCH (src)-[r:Rel {kind: $kind}]->(t:Symbol {id: $id}) RETURN DISTINCT src.id AS id"
 
 _DEFINED = (
     "MATCH (s:Symbol {path: $path}) RETURN s.qualified_name AS qualified_name, s.kind AS kind"
@@ -34,32 +29,27 @@ class BlastRadiusService:
         self._graph = graph
 
     def simulate(self, changed: Sequence[str], *, max_depth: int = 3) -> BlastRadiusReport:
-        """Return the transitive set of files/tests that depend on ``changed``."""
-        frontier: set[str] = set()
-        for path in changed:
-            rows = self._graph.query(_QUALNAME, {"id": path})
-            if rows:
-                frontier.add(str(rows[0]["qualified_name"]))
-
+        """Return the transitive set of files/tests that import ``changed`` (by file id)."""
+        changed_set = set(changed)
+        frontier: set[str] = set(changed)
         impacted_files: set[str] = set()
         impacted_tests: set[str] = set()
-        seen_quals: set[str] = set(frontier)
+        seen: set[str] = set(changed)
         depth = 0
         while frontier and depth < max_depth:
             depth += 1
             next_frontier: set[str] = set()
-            for qual in frontier:
-                for row in self._graph.query(_IMPORTERS, {"qual": qual, "kind": "imports"}):
-                    file_id = str(row["id"])
-                    if file_id in impacted_files or file_id in changed:
+            for file_id in frontier:
+                for row in self._graph.query(_IMPORTERS, {"id": file_id, "kind": "imports"}):
+                    importer = str(row["id"])
+                    if importer in impacted_files or importer in changed_set:
                         continue
-                    impacted_files.add(file_id)
-                    if _is_test(file_id):
-                        impacted_tests.add(file_id)
-                    importer_qual = str(row["qualified_name"] or "")
-                    if importer_qual and importer_qual not in seen_quals:
-                        seen_quals.add(importer_qual)
-                        next_frontier.add(importer_qual)
+                    impacted_files.add(importer)
+                    if _is_test(importer):
+                        impacted_tests.add(importer)
+                    if importer not in seen:
+                        seen.add(importer)
+                        next_frontier.add(importer)
             frontier = next_frontier
 
         impacted_symbols: set[str] = set()

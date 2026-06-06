@@ -8,6 +8,15 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from fastmcp import FastMCP
 
+_INSTRUCTIONS = (
+    "Topolox indexes this repository into a dependency + symbol graph. Prefer these tools "
+    "over grepping or reading files when answering questions about the codebase: use "
+    "get_file_dependencies for a file's imports/importers, analyze_blast_radius before edits "
+    "to gauge impact, and prune_context / search_architecture_graph to find relevant code. "
+    "Paths are repo-relative POSIX (e.g. apps/api/app/db.py); an empty result means the "
+    "path or query isn't in the index."
+)
+
 
 def build_server(repo_root: Path | None = None) -> FastMCP:
     """Build a FastMCP server backed by the index under ``repo_root``."""
@@ -35,7 +44,7 @@ def build_server(repo_root: Path | None = None) -> FastMCP:
         pruner=ContextPruner(graph, vectors, default_embedder()),
         blast=BlastRadiusService(graph),
     )
-    server = FastMCP("Topolox")
+    server = FastMCP("Topolox", instructions=_INSTRUCTIONS)
     register_tools(server, context)
     return server
 

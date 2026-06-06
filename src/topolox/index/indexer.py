@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from topolox.graph.resolve import resolve_imports
 from topolox.parsing.discovery import discover_files
 from topolox.parsing.pool import parse_repo
 from topolox.parsing.worker import parse_file
@@ -72,6 +73,7 @@ class Indexer:
 
         if rows:
             self._vectors.upsert(rows)
+        resolve_imports(self._graph)
 
         return IndexStats(n_files, n_nodes, n_edges, n_errors, time.perf_counter() - start)
 
@@ -105,6 +107,7 @@ class Indexer:
             n_nodes += len(result.nodes)
             n_edges += len(result.edges)
 
+        resolve_imports(self._graph)
         return IndexStats(n_files, n_nodes, n_edges, n_errors, time.perf_counter() - start)
 
     def _relpath(self, path: Path) -> str:

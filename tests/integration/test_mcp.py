@@ -8,6 +8,7 @@ from pathlib import Path
 from fastmcp import Client
 
 from topolox.graph.kuzu_store import KuzuGraphStore
+from topolox.graph.resolve import resolve_imports
 from topolox.mcp.install import install_mcp
 from topolox.mcp.server import build_server
 from topolox.models.edges import Edge, EdgeKind
@@ -33,6 +34,7 @@ def _seed_index(repo: Path) -> None:
         )
         edges = tuple(Edge(src_id=path, dst_id=m, kind=EdgeKind.IMPORTS) for m in imports)
         store.upsert(ParseResult(path=path, language="python", nodes=(node,), edges=edges))
+    resolve_imports(store)
     store.close()
 
 

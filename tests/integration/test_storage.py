@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from topolox.graph.kuzu_store import KuzuGraphStore
+from topolox.graph.resolve import resolve_imports
 from topolox.models.edges import Edge, EdgeKind
 from topolox.models.graph import ParseResult
 from topolox.models.nodes import NodeKind, Span, SymbolNode
@@ -43,6 +44,7 @@ def test_dependency_service(tmp_path: Path) -> None:
     store.init_schema()
     store.upsert(_file_fragment("app/main.py", "app.main", ["app.db"]))
     store.upsert(_file_fragment("app/db.py", "app.db", []))
+    resolve_imports(store)
 
     deps = DependencyService(store)
     main_map = deps.of_file("app/main.py")
