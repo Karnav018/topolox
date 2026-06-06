@@ -106,10 +106,35 @@ def daemon(
     typer.echo(_NOT_YET.format(phase="Phase 2"))
 
 
-@app.command()
-def mcp() -> None:
-    """Start the FastMCP server for Claude Code / Cursor."""
-    typer.echo(_NOT_YET.format(phase="Phase 2"))
+mcp_app = typer.Typer(
+    help="Run or install the MCP server for Claude Code / Cursor.",
+    no_args_is_help=True,
+)
+app.add_typer(mcp_app, name="mcp")
+
+
+@mcp_app.command("serve")
+def mcp_serve() -> None:
+    """Run the Topolox MCP server over stdio."""
+    from topolox.mcp.server import serve
+
+    serve()
+
+
+@mcp_app.command("install")
+def mcp_install(
+    client: Annotated[str, typer.Option(help="Which client: claude-code, cursor, or all.")] = "all",
+) -> None:
+    """Register the Topolox MCP server with Claude Code and/or Cursor."""
+    from topolox.mcp.install import install_mcp
+
+    targets = install_mcp(Path.cwd(), client=client)
+    if not targets:
+        typer.echo(f"error: unknown client {client!r} (use claude-code, cursor, or all)", err=True)
+        raise typer.Exit(code=1)
+    for target in targets:
+        typer.echo(f"✓ registered topolox in {target}")
+    typer.echo("Restart your client to pick up the new MCP server.")
 
 
 @app.command()
@@ -172,8 +197,7 @@ def prune(
         vectors.close()
 
     typer.echo(
-        f"Context for {prompt!r} "
-        f"(~{context.token_estimate} tokens, {len(context.symbols)} symbols)"
+        f"Context for {prompt!r} (~{context.token_estimate} tokens, {len(context.symbols)} symbols)"
     )
     for symbol in context.symbols:
         location = f"  {symbol.path}" if symbol.path else ""

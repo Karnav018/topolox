@@ -25,6 +25,7 @@ class LanceDBVectorStore:
         if self._db is None:
             import lancedb
 
+            self._uri.parent.mkdir(parents=True, exist_ok=True)
             self._db = lancedb.connect(str(self._uri))
         return self._db
 

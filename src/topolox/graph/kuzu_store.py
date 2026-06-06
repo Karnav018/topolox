@@ -42,6 +42,7 @@ class KuzuGraphStore:
     def __init__(self, db_path: Path) -> None:
         import kuzu
 
+        db_path.parent.mkdir(parents=True, exist_ok=True)
         self._db: Any = kuzu.Database(str(db_path))
         self._conn: Any = kuzu.Connection(self._db)
 
