@@ -102,8 +102,38 @@ def index(
 def daemon(
     path: Annotated[Path, typer.Argument(help="Repository root to watch.")] = Path(),
 ) -> None:
-    """Watch a repository and keep the index live."""
-    typer.echo(_NOT_YET.format(phase="Phase 2"))
+    """Index a repository, then watch it and keep the index live."""
+    import asyncio
+
+    from topolox.config import load_settings
+    from topolox.daemon.service import DaemonService
+    from topolox.graph.kuzu_store import KuzuGraphStore
+    from topolox.index.indexer import Indexer
+    from topolox.vectors.embedder import default_embedder
+    from topolox.vectors.lancedb_store import LanceDBVectorStore
+
+    root = path.resolve()
+    if not root.exists():
+        typer.echo(f"error: path does not exist: {root}", err=True)
+        raise typer.Exit(code=1)
+
+    data_dir = root / ".topolox"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    graph = KuzuGraphStore(data_dir / "graph.kuzu")
+    vectors = LanceDBVectorStore(data_dir / "vectors.lance")
+    settings = load_settings()
+    indexer = Indexer(settings, graph, vectors, default_embedder())
+
+    typer.echo(f"Indexing {root} ...")
+    stats = indexer.build(root)
+    typer.echo(f"Indexed {stats.files} file(s). Watching for changes — Ctrl+C to stop.")
+    try:
+        asyncio.run(DaemonService(settings, indexer, root).run())
+    except KeyboardInterrupt:
+        typer.echo("\nStopped.")
+    finally:
+        graph.close()
+        vectors.close()
 
 
 mcp_app = typer.Typer(
