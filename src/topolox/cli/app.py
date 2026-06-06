@@ -281,9 +281,41 @@ def ui() -> None:
 
 
 @app.command()
-def benchmark() -> None:
-    """Run the token-reduction / retrieval benchmark."""
-    typer.echo(_NOT_YET.format(phase="Phase 3"))
+def benchmark(
+    path: Annotated[Path, typer.Argument(help="Repository root to benchmark.")] = Path(),
+    sample: Annotated[int, typer.Option(help="Files to sample for query/token metrics.")] = 50,
+    json_out: Annotated[bool, typer.Option("--json", help="Print the report as JSON.")] = False,
+) -> None:
+    """Benchmark indexing speed, query latency, and token reduction."""
+    from topolox.benchmark import run_benchmark
+
+    root = path.resolve()
+    if not root.exists():
+        typer.echo(f"error: path does not exist: {root}", err=True)
+        raise typer.Exit(code=1)
+
+    typer.echo(f"Benchmarking {root} (indexing into a temp database) ...")
+    report = run_benchmark(root, sample=sample)
+    if json_out:
+        typer.echo(report.model_dump_json(indent=2))
+        return
+    typer.echo("")
+    typer.echo(
+        f"  Indexed:         {report.files} files -> {report.nodes} nodes, {report.edges} edges"
+    )
+    typer.echo(f"  Index time:      {report.index_seconds}s ({report.files_per_second} files/s)")
+    typer.echo(
+        f"  Query latency:   p50 {report.query_p50_ms}ms / p95 {report.query_p95_ms}ms "
+        f"({report.sampled_files} files sampled)"
+    )
+    typer.echo(
+        f"  Token reduction: {report.token_reduction_median}x median / "
+        f"{report.token_reduction_mean}x mean"
+    )
+    typer.echo(
+        f"                   {report.baseline_tokens:,} tokens (reading files) -> "
+        f"{report.topolox_tokens:,} tokens (topolox)"
+    )
 
 
 def main() -> None:
