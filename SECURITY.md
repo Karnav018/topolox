@@ -10,7 +10,7 @@ Please **do not** open a public issue for security problems.
 
 Instead, report privately via GitHub's
 [private vulnerability reporting](https://github.com/Karnav018/topolox/security/advisories/new),
-or email the maintainer at `INSERT-CONTACT-EMAIL`.
+or email the maintainer at `karnav.p.018@gmail.com`.
 
 You can expect an initial response within a few days. Once a fix is available
 we will coordinate disclosure and credit reporters who wish to be named.

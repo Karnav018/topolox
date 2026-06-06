@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-06
+
+### Changed
+- Set the package author email and the security / code-of-conduct contact address.
+
+## [0.1.0] - 2026-06-06
+
 ### Added
 - Multi-language extraction: a config-driven (per-language `LangSpec`) generalized extractor now pulls functions/classes/methods/imports from Python, JavaScript/JSX, TypeScript/TSX, Go, Rust, Java, C, C++, C#, Ruby, PHP, Kotlin, Swift, and Scala; any other tree-sitter-language-pack grammar is parsed and indexed at the file level.
 - Multi-agent `topolox mcp install`: registers the MCP server with Claude Code, Cursor, OpenAI Codex CLI (TOML), Gemini CLI, VS Code (`servers` key), Windsurf, and Claude Desktop, merging existing config.
@@ -20,4 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI skeleton (`topolox`) and module stubs for parser, stores, indexer, query, daemon, MCP, and TUI.
 - Open-source project files: README, license, contributing guide, code of conduct, security policy, CI, and issue/PR templates.
 
-[Unreleased]: https://github.com/Karnav018/topolox/commits/main
+[Unreleased]: https://github.com/Karnav018/topolox/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/Karnav018/topolox/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/Karnav018/topolox/releases/tag/v0.1.0
