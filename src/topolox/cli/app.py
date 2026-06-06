@@ -43,9 +43,40 @@ def _main(
 @app.command()
 def index(
     path: Annotated[Path, typer.Argument(help="Repository root to index.")] = Path(),
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="Parse and print symbols/edges without persisting."),
+    ] = False,
 ) -> None:
     """Index a repository into the graph + vector store."""
-    typer.echo(_NOT_YET.format(phase="Phase 1"))
+    if not dry_run:
+        typer.echo(_NOT_YET.format(phase="Phase 1 (storage)"))
+        return
+
+    from topolox.parsing.discovery import discover_files
+    from topolox.parsing.pool import parse_repo
+
+    root = path.resolve()
+    if not root.exists():
+        typer.echo(f"error: path does not exist: {root}", err=True)
+        raise typer.Exit(code=1)
+
+    files = discover_files(root)
+    total_nodes = 0
+    total_edges = 0
+    errors = 0
+    for result in parse_repo(files, root=root):
+        if result.error:
+            errors += 1
+            typer.echo(f"  ! {result.path}: {result.error}", err=True)
+            continue
+        total_nodes += len(result.nodes)
+        total_edges += len(result.edges)
+        typer.echo(f"  {result.path}: {len(result.nodes)} nodes, {len(result.edges)} edges")
+    summary = f"Parsed {len(files)} file(s) -> {total_nodes} nodes, {total_edges} edges"
+    if errors:
+        summary += f", {errors} error(s)"
+    typer.echo(summary)
 
 
 @app.command()

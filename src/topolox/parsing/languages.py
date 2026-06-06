@@ -24,7 +24,11 @@ def language_for(path: Path) -> str | None:
 def get_parser_for(language: str) -> Parser:
     """Return a cached tree-sitter ``Parser`` for ``language``.
 
-    Phase 1: wraps ``tree_sitter_language_pack.get_parser``. Built per-process
-    (parsers are not picklable).
+    Built per-process (parsers are not picklable). Uses the standard
+    ``tree_sitter.Parser`` with a grammar from ``tree_sitter_language_pack``
+    (the pack's own ``get_parser`` returns a non-standard, str-only parser).
     """
-    raise NotImplementedError("Phase 1: parser construction")
+    from tree_sitter import Parser
+    from tree_sitter_language_pack import get_language
+
+    return Parser(get_language(language))
