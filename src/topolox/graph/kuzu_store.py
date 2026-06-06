@@ -39,11 +39,11 @@ SET r.weight = $weight
 class KuzuGraphStore:
     """Embedded Kùzu adapter implementing the ``GraphStore`` protocol."""
 
-    def __init__(self, db_path: Path) -> None:
+    def __init__(self, db_path: Path, *, read_only: bool = False) -> None:
         import kuzu
 
         db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._db: Any = kuzu.Database(str(db_path))
+        self._db: Any = kuzu.Database(str(db_path), read_only=read_only)
         self._conn: Any = kuzu.Connection(self._db)
 
     def init_schema(self) -> None:
@@ -119,3 +119,17 @@ class KuzuGraphStore:
             closer = getattr(obj, "close", None)
             if callable(closer):
                 closer()
+
+
+def open_readonly(db_path: Path) -> KuzuGraphStore:
+    """Open the graph read-only, creating an empty schema first if it's missing.
+
+    Read-only opens coexist with a running ``topolox daemon`` (Kùzu's single
+    read-writer) and with other readers (multiple agents), so the MCP server and
+    query CLIs never fight over the write lock.
+    """
+    if not db_path.exists():
+        seed = KuzuGraphStore(db_path)
+        seed.init_schema()
+        seed.close()
+    return KuzuGraphStore(db_path, read_only=True)

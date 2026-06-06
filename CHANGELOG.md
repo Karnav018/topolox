@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-06
+
+### Fixed
+- MCP server and the `deps` / `prune` / `blast` CLIs now open the Kùzu graph **read-only**, so they coexist with a running `topolox daemon` (Kùzu allows one writer + many readers) and with multiple agents. Previously, connecting an agent while the daemon held the write lock crashed the server with `Could not set lock` ("MCP error -32000: Connection closed"). The server also seeds an empty graph if none exists yet and suppresses the FastMCP stdout banner.
+
 ## [0.1.1] - 2026-06-06
 
 ### Changed
@@ -27,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI skeleton (`topolox`) and module stubs for parser, stores, indexer, query, daemon, MCP, and TUI.
 - Open-source project files: README, license, contributing guide, code of conduct, security policy, CI, and issue/PR templates.
 
-[Unreleased]: https://github.com/Karnav018/topolox/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/Karnav018/topolox/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/Karnav018/topolox/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Karnav018/topolox/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Karnav018/topolox/releases/tag/v0.1.0

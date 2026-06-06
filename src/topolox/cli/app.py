@@ -190,7 +190,7 @@ def deps(
         typer.echo("error: no index found here. Run 'topolox index .' first.", err=True)
         raise typer.Exit(code=1)
 
-    graph = KuzuGraphStore(graph_db)
+    graph = KuzuGraphStore(graph_db, read_only=True)
     try:
         result = DependencyService(graph).of_file(file, depth=depth)
     finally:
@@ -225,7 +225,7 @@ def prune(
         typer.echo("error: no index found here. Run 'topolox index .' first.", err=True)
         raise typer.Exit(code=1)
 
-    graph = KuzuGraphStore(data_dir / "graph.kuzu")
+    graph = KuzuGraphStore(data_dir / "graph.kuzu", read_only=True)
     vectors = LanceDBVectorStore(data_dir / "vectors.lance")
     try:
         context = ContextPruner(graph, vectors, default_embedder()).prune(
@@ -259,7 +259,7 @@ def blast(
         typer.echo("error: no index found here. Run 'topolox index .' first.", err=True)
         raise typer.Exit(code=1)
 
-    graph = KuzuGraphStore(graph_db)
+    graph = KuzuGraphStore(graph_db, read_only=True)
     try:
         report = BlastRadiusService(graph).simulate(files, max_depth=depth)
     finally:

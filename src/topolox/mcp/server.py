@@ -14,7 +14,7 @@ def build_server(repo_root: Path | None = None) -> FastMCP:
     from fastmcp import FastMCP
 
     from topolox.config import load_settings
-    from topolox.graph.kuzu_store import KuzuGraphStore
+    from topolox.graph.kuzu_store import open_readonly
     from topolox.mcp.context import AppContext
     from topolox.mcp.tools import register_tools
     from topolox.query.blast_radius import BlastRadiusService
@@ -25,8 +25,7 @@ def build_server(repo_root: Path | None = None) -> FastMCP:
 
     root = (repo_root or Path.cwd()).resolve()
     data_dir = root / ".topolox"
-    graph = KuzuGraphStore(data_dir / "graph.kuzu")
-    graph.init_schema()
+    graph = open_readonly(data_dir / "graph.kuzu")  # read-only: coexists with the daemon
     vectors = LanceDBVectorStore(data_dir / "vectors.lance")
     context = AppContext(
         settings=load_settings(),
@@ -43,7 +42,7 @@ def build_server(repo_root: Path | None = None) -> FastMCP:
 
 def serve(repo_root: Path | None = None) -> None:
     """Run the MCP server over stdio."""
-    build_server(repo_root).run()
+    build_server(repo_root).run(show_banner=False)
 
 
 def main() -> None:
