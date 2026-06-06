@@ -137,7 +137,7 @@ def daemon(
 
 
 mcp_app = typer.Typer(
-    help="Run or install the MCP server for Claude Code / Cursor.",
+    help="Run or install the MCP server for AI coding agents.",
     no_args_is_help=True,
 )
 app.add_typer(mcp_app, name="mcp")
@@ -153,18 +153,27 @@ def mcp_serve() -> None:
 
 @mcp_app.command("install")
 def mcp_install(
-    client: Annotated[str, typer.Option(help="Which client: claude-code, cursor, or all.")] = "all",
+    client: Annotated[
+        str,
+        typer.Option(
+            help=(
+                "Client to register: all (project-scoped), claude-code, cursor, "
+                "gemini, codex, vscode, windsurf, claude-desktop."
+            )
+        ),
+    ] = "all",
 ) -> None:
-    """Register the Topolox MCP server with Claude Code and/or Cursor."""
-    from topolox.mcp.install import install_mcp
+    """Register the Topolox MCP server with AI coding agents."""
+    from topolox.mcp.install import ALL_CLIENTS, install_mcp
 
     targets = install_mcp(Path.cwd(), client=client)
     if not targets:
-        typer.echo(f"error: unknown client {client!r} (use claude-code, cursor, or all)", err=True)
+        choices = ", ".join(("all", *ALL_CLIENTS))
+        typer.echo(f"error: unknown client {client!r}. Choices: {choices}", err=True)
         raise typer.Exit(code=1)
     for target in targets:
         typer.echo(f"✓ registered topolox in {target}")
-    typer.echo("Restart your client to pick up the new MCP server.")
+    typer.echo("Restart your agent to pick up the new MCP server.")
 
 
 @app.command()

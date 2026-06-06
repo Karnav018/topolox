@@ -1,18 +1,54 @@
-"""Extract symbols and edges from a parsed file using tree-sitter."""
+"""Extract symbols and edges from a parsed file using tree-sitter.
+
+Extraction is driven by per-language :class:`~topolox.parsing.languages.LangSpec`
+configs, so the same generic traversal works across languages.
+"""
 
 from __future__ import annotations
 
 import hashlib
+from collections import deque
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from topolox.models.edges import Edge, EdgeKind
 from topolox.models.graph import ParseResult
 from topolox.models.nodes import NodeKind, Span, SymbolNode
-from topolox.parsing.languages import get_parser_for
+from topolox.parsing.languages import get_parser_for, spec_for
 
 if TYPE_CHECKING:
     from tree_sitter import Node
+
+_NAME_NODE_TYPES = frozenset(
+    {
+        "identifier",
+        "type_identifier",
+        "field_identifier",
+        "constant",
+        "scoped_identifier",
+        "simple_identifier",
+        "name",
+    }
+)
+
+_IMPORT_FIELDS = ("module_name", "name", "source", "path", "argument")
+
+_IMPORT_NODE_TYPES = frozenset(
+    {
+        "string",
+        "string_literal",
+        "interpreted_string_literal",
+        "raw_string_literal",
+        "string_fragment",
+        "dotted_name",
+        "scoped_identifier",
+        "namespace_name",
+        "qualified_name",
+        "package_identifier",
+        "identifier",
+        "type_identifier",
+    }
+)
 
 
 def _text(node: Node, source: bytes) -> str:
@@ -35,6 +71,44 @@ def _module_qualname(path: str) -> str:
     return ".".join(parts)
 
 
+def _clean_import(text: str) -> str:
+    return text.strip().strip("\"'`;<>").strip()
+
+
+def _node_name(node: Node, source: bytes) -> str:
+    direct = node.child_by_field_name("name")
+    if direct is not None:
+        return _text(direct, source)
+    # C/C++ bury the name inside a declarator chain.
+    declarator = node.child_by_field_name("declarator")
+    while declarator is not None:
+        if declarator.type in ("identifier", "field_identifier", "type_identifier"):
+            return _text(declarator, source)
+        declarator = declarator.child_by_field_name("declarator")
+    # Fall back to the first name-like descendant.
+    queue: deque[Node] = deque(node.named_children)
+    while queue:
+        current = queue.popleft()
+        if current.type in _NAME_NODE_TYPES:
+            return _text(current, source)
+        queue.extend(current.named_children)
+    return ""
+
+
+def _import_target(node: Node, source: bytes) -> str | None:
+    for field_name in _IMPORT_FIELDS:
+        child = node.child_by_field_name(field_name)
+        if child is not None:
+            return _clean_import(_text(child, source))
+    queue: deque[Node] = deque(node.named_children)
+    while queue:
+        current = queue.popleft()
+        if current.type in _IMPORT_NODE_TYPES:
+            return _clean_import(_text(current, source))
+        queue.extend(current.named_children)
+    return None
+
+
 class SymbolExtractor:
     """Run tree-sitter over a file to produce nodes and edges."""
 
@@ -43,31 +117,53 @@ class SymbolExtractor:
 
     def extract(self, path: str, source: bytes) -> ParseResult:
         """Extract a :class:`ParseResult` from ``source``."""
-        parser = get_parser_for(self._language)
-        root = parser.parse(source).root_node
-
-        nodes: list[SymbolNode] = []
-        edges: list[Edge] = []
+        spec = spec_for(self._language)
+        root = get_parser_for(self._language).parse(source).root_node
         module_qual = _module_qualname(path)
+        language = self._language
 
-        nodes.append(
+        nodes: list[SymbolNode] = [
             SymbolNode(
                 id=path,
                 kind=NodeKind.FILE,
                 name=PurePosixPath(path).name,
                 qualified_name=module_qual,
                 path=path,
-                language=self._language,
+                language=language,
                 span=_span(root),
             )
-        )
+        ]
+        edges: list[Edge] = []
 
         def visit(node: Node, parent_id: str, parent_qual: str, container: NodeKind) -> None:
+            if spec is None:
+                return
             for child in node.named_children:
                 ctype = child.type
-                if ctype == "function_definition":
-                    name = self._field_text(child, "name", source)
+                if ctype in spec.classes:
+                    name = _node_name(child, source)
                     if not name:
+                        visit(child, parent_id, parent_qual, container)
+                        continue
+                    qual = f"{parent_qual}.{name}" if parent_qual else name
+                    sid = f"{path}::{qual}"
+                    nodes.append(
+                        SymbolNode(
+                            id=sid,
+                            kind=NodeKind.CLASS,
+                            name=name,
+                            qualified_name=qual,
+                            path=path,
+                            language=language,
+                            span=_span(child),
+                        )
+                    )
+                    edges.append(Edge(src_id=parent_id, dst_id=sid, kind=EdgeKind.DEFINES))
+                    visit(child, sid, qual, NodeKind.CLASS)
+                elif ctype in spec.functions:
+                    name = _node_name(child, source)
+                    if not name:
+                        visit(child, parent_id, parent_qual, container)
                         continue
                     qual = f"{parent_qual}.{name}" if parent_qual else name
                     sid = f"{path}::{qual}"
@@ -79,72 +175,34 @@ class SymbolExtractor:
                             name=name,
                             qualified_name=qual,
                             path=path,
-                            language=self._language,
+                            language=language,
                             span=_span(child),
-                            signature=self._signature(child, name, source),
+                            signature=_signature(child, name, source),
                         )
                     )
                     edges.append(Edge(src_id=parent_id, dst_id=sid, kind=EdgeKind.DEFINES))
-                    body = child.child_by_field_name("body")
-                    if body is not None:
-                        visit(body, sid, qual, NodeKind.FUNCTION)
-                elif ctype == "class_definition":
-                    name = self._field_text(child, "name", source)
-                    if not name:
-                        continue
-                    qual = f"{parent_qual}.{name}" if parent_qual else name
-                    sid = f"{path}::{qual}"
-                    nodes.append(
-                        SymbolNode(
-                            id=sid,
-                            kind=NodeKind.CLASS,
-                            name=name,
-                            qualified_name=qual,
-                            path=path,
-                            language=self._language,
-                            span=_span(child),
-                        )
-                    )
-                    edges.append(Edge(src_id=parent_id, dst_id=sid, kind=EdgeKind.DEFINES))
-                    body = child.child_by_field_name("body")
-                    if body is not None:
-                        visit(body, sid, qual, NodeKind.CLASS)
-                elif ctype in ("import_statement", "import_from_statement"):
-                    module = self._import_module(child, source)
-                    if module:
-                        edges.append(Edge(src_id=path, dst_id=module, kind=EdgeKind.IMPORTS))
+                    visit(child, sid, qual, NodeKind.FUNCTION)
+                elif ctype in spec.imports:
+                    target = _import_target(child, source)
+                    if target:
+                        edges.append(Edge(src_id=path, dst_id=target, kind=EdgeKind.IMPORTS))
+                elif ctype in spec.containers:
+                    visit(child, parent_id, parent_qual, NodeKind.CLASS)
                 else:
                     visit(child, parent_id, parent_qual, container)
 
-        visit(root, path, module_qual, NodeKind.MODULE)
+        if spec is not None:
+            visit(root, path, module_qual, NodeKind.MODULE)
 
         return ParseResult(
             path=path,
-            language=self._language,
+            language=language,
             nodes=tuple(nodes),
             edges=tuple(edges),
             content_hash=hashlib.sha256(source).hexdigest(),
         )
 
-    @staticmethod
-    def _field_text(node: Node, field: str, source: bytes) -> str:
-        child = node.child_by_field_name(field)
-        return _text(child, source) if child is not None else ""
 
-    @staticmethod
-    def _signature(func: Node, name: str, source: bytes) -> str:
-        params = func.child_by_field_name("parameters")
-        return f"{name}{_text(params, source)}" if params is not None else f"{name}()"
-
-    @staticmethod
-    def _import_module(node: Node, source: bytes) -> str | None:
-        if node.type == "import_from_statement":
-            module = node.child_by_field_name("module_name")
-            return _text(module, source) if module is not None else None
-        queue: list[Node] = list(node.named_children)
-        while queue:
-            current = queue.pop(0)
-            if current.type == "dotted_name":
-                return _text(current, source)
-            queue.extend(current.named_children)
-        return None
+def _signature(node: Node, name: str, source: bytes) -> str:
+    params = node.child_by_field_name("parameters")
+    return f"{name}{_text(params, source)}" if params is not None else f"{name}()"

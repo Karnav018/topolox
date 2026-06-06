@@ -27,16 +27,22 @@ discover → parse (multiprocessing tree-sitter) → ParseResult
 
 ## Two ways to use it
 
-1. **Invisible backend (MCP).** Index once, register with your agent, and Claude Code / Cursor silently pull grounded, cheap context.
+1. **Invisible backend (MCP).** Index once, register with your agent, and any MCP client silently pulls grounded, cheap context.
    ```bash
    topolox index .
-   topolox mcp install      # writes MCP config for Claude Code / Cursor
+   topolox mcp install      # registers with Claude Code, Cursor, Codex, Gemini CLI, VS Code, ...
    topolox daemon           # keep the graph live in the background
    ```
 2. **The TUI cockpit.** A 3-pane terminal dashboard (agent chat · live knowledge graph · daemon log).
    ```bash
    topolox                  # launches the dashboard in the current repo
    ```
+
+## Supported languages & agents
+
+**Languages** — symbol + import extraction for Python, JavaScript/JSX, TypeScript/TSX, Go, Rust, Java, C, C++, C#, Ruby, PHP, Kotlin, Swift, and Scala; any other [tree-sitter-language-pack](https://github.com/Goldziher/tree-sitter-language-pack) grammar (300+) is still parsed and indexed at the file level.
+
+**Agents** — `topolox mcp install` registers the MCP server with **Claude Code, Cursor, OpenAI Codex CLI, Gemini CLI, VS Code, Windsurf, and Claude Desktop** (and any other MCP client — it's a standard stdio MCP server).
 
 ## Install (from source)
 

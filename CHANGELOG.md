@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Multi-language extraction: a config-driven (per-language `LangSpec`) generalized extractor now pulls functions/classes/methods/imports from Python, JavaScript/JSX, TypeScript/TSX, Go, Rust, Java, C, C++, C#, Ruby, PHP, Kotlin, Swift, and Scala; any other tree-sitter-language-pack grammar is parsed and indexed at the file level.
+- Multi-agent `topolox mcp install`: registers the MCP server with Claude Code, Cursor, OpenAI Codex CLI (TOML), Gemini CLI, VS Code (`servers` key), Windsurf, and Claude Desktop, merging existing config.
 - Daemon (Phase 2): incremental `Indexer.update()` (re-parse changed files in-process, content-hash skip, prune stale symbols, handle deletions) and a `watchdog` watcher → debounced async service that patches the graph + vectors in milliseconds. Wired as `topolox daemon` (initial index, then live watch).
 - MCP server (Phase 2): a FastMCP server exposing `get_file_dependencies`, `analyze_blast_radius`, `prune_context`, and `search_architecture_graph` (async, thread-offloaded) to Claude Code / Cursor. `topolox mcp serve` runs it over stdio; `topolox mcp install` writes the client config (`.mcp.json` / `.cursor/mcp.json`). Tested via an in-memory FastMCP client.
 - Query engine (Phase 2): blast-radius simulation (transitive downstream importers), LanceDB vector search, a `FastEmbedEmbedder` (local ONNX embeddings via the `[embeddings]` extra), and a hybrid `ContextPruner` (vector seeds → graph expansion → token-budget cap). Wired as `topolox blast` and `topolox prune`; `topolox index` now uses real embeddings when `fastembed` is installed.
