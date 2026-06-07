@@ -1,0 +1,484 @@
+---
+const repo = "https://github.com/Karnav018/topolox";
+---
+
+<section id="top" class="relative">
+  <div class="mx-auto max-w-7xl px-5 sm:px-8">
+    <div class="lg:grid lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
+      <!-- ===== pinned graph (left) ===== -->
+      <div class="lg:sticky lg:top-0 lg:h-screen">
+        <div id="graph-wrap" class="relative h-[56vh] lg:h-screen">
+          <canvas id="graph" class="absolute inset-0 h-full w-full"></canvas>
+          <div
+            class="pointer-events-none absolute inset-0"
+            style="background:radial-gradient(62% 58% at 50% 46%, transparent 30%, var(--color-ink) 92%);"
+          >
+          </div>
+          <div id="graph-tip" class="pointer-events-none absolute z-20 hidden rounded-md border border-line bg-[color-mix(in_srgb,#060608_92%,transparent)] px-2 py-1 font-mono text-xs text-cyan"></div>
+
+          <!-- HUD -->
+          <div class="pointer-events-none absolute bottom-6 left-1/2 z-10 -translate-x-1/2 lg:left-6 lg:translate-x-0">
+            <div class="pill inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-mono text-xs text-muted">
+              <span id="hud-dot" class="h-2 w-2 rounded-full" style="background:var(--color-cyan)"></span>
+              <span id="hud-label">your codebase — mapped as a graph</span>
+            </div>
+          </div>
+          <div class="pointer-events-none absolute right-6 top-24 z-10 hidden font-mono text-[11px] tracking-widest text-faint lg:block">
+            <span id="hud-step">01</span> / 04
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== scrolling narrative (right) ===== -->
+      <div class="relative">
+        <!-- intro / hero -->
+        <article class="step flex flex-col justify-center pt-28 pb-14 lg:min-h-screen" data-scene="intro">
+          <span class="pill inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs text-muted">
+            <span class="relative flex h-2 w-2">
+              <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan opacity-60"></span>
+              <span class="relative inline-flex h-2 w-2 rounded-full bg-cyan"></span>
+            </span>
+            Open source · MIT · works with every MCP agent
+          </span>
+
+          <h1 class="mt-6 text-4xl font-semibold leading-[1.08] tracking-[-0.03em] sm:text-5xl">
+            Your agent shouldn't read every file to understand <span class="text-gradient">one change.</span>
+          </h1>
+
+          <p class="mt-5 max-w-xl text-lg text-muted">
+            Topolox indexes your repo into an embedded <span class="text-text">graph + vector engine</span> and
+            serves targeted context to Claude Code, Cursor, and every MCP agent — so they reason over your
+            architecture instead of burning tokens rediscovering it.
+          </p>
+
+          <div class="mt-7 flex flex-wrap items-center gap-3">
+            <button
+              data-copy="pip install topolox"
+              class="term group flex items-center gap-3 px-4 py-3 text-sm transition hover:border-cyan/50"
+              aria-label="Copy install command"
+            >
+              <span class="select-none text-muted">$</span>
+              <span class="text-text">pip install topolox</span>
+              <span class="ml-1 inline-flex items-center gap-1 text-xs text-muted transition group-hover:text-cyan">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path>
+                </svg>
+                <span data-copy-label>copy</span>
+              </span>
+            </button>
+          </div>
+
+          <div class="mt-5 flex flex-wrap items-center gap-3">
+            <a href="#start" class="btn btn-primary">Get started</a>
+            <a href={repo} target="_blank" rel="noopener" class="btn btn-ghost">
+              <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"></path>
+              </svg>
+              Star <span class="text-muted" data-stars>★</span>
+            </a>
+          </div>
+
+          <div class="mt-9 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted">
+            <span><span class="font-semibold text-text">≈5.4×</span> less context</span>
+            <span class="text-line">·</span>
+            <span><span class="font-semibold text-text">&lt;1ms</span> queries</span>
+            <span class="text-line">·</span>
+            <span><span class="font-semibold text-text">14+</span> languages</span>
+            <span class="text-line">·</span>
+            <span><span class="font-semibold text-text">100%</span> local</span>
+          </div>
+
+          <div class="mt-12 hidden items-center gap-2 font-mono text-xs text-faint lg:flex">
+            <span class="animate-bounce">↓</span> scroll to see it work
+          </div>
+        </article>
+
+        <!-- 01 index -->
+        <article class="step flex flex-col justify-center py-14 lg:min-h-screen lg:py-16" data-scene="index">
+          <p class="eyebrow">01 — index</p>
+          <h2 class="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">One command maps your whole repo</h2>
+          <p class="mt-4 max-w-lg text-muted">
+            Tree-sitter parses every file into a graph of symbols and imports, stored in an embedded
+            <span class="text-text"> Kùzu</span> graph DB plus <span class="text-text">LanceDB</span> vectors.
+            No server, no cloud, no API key — it all lives in <span class="font-mono text-text">.topolox/</span>.
+          </p>
+          <div class="mt-6 term w-fit px-4 py-3 text-sm">
+            <div><span class="select-none text-muted">$ </span><span class="text-text">topolox index .</span></div>
+            <div class="mt-1 text-cyan">✓ 410 nodes · 544 edges · 11.6s</div>
+          </div>
+        </article>
+
+        <!-- 02 blast -->
+        <article class="step flex flex-col justify-center py-14 lg:min-h-screen lg:py-16" data-scene="blast">
+          <p class="eyebrow">02 — blast radius</p>
+          <h2 class="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">Know what breaks before you touch it</h2>
+          <p class="mt-4 max-w-lg text-muted">
+            Ask the graph for every transitive importer of a file or symbol. Editing
+            <span class="font-mono text-text"> db.py</span>? Topolox lights up everything downstream — instantly,
+            so the agent changes it with eyes open.
+          </p>
+          <div class="mt-6 term w-fit px-4 py-3 text-sm">
+            <div><span class="select-none text-muted">$ </span><span class="text-text">topolox blast db.py</span></div>
+            <div class="mt-1 text-heat">→ 13 impacted files · 1.1ms</div>
+          </div>
+          <p class="mt-4 font-mono text-xs text-faint">watch the graph on the left →</p>
+        </article>
+
+        <!-- 03 deps -->
+        <article class="step flex flex-col justify-center py-14 lg:min-h-screen lg:py-16" data-scene="deps">
+          <p class="eyebrow">03 — dependencies</p>
+          <h2 class="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">What a file uses, and who uses it</h2>
+          <p class="mt-4 max-w-lg text-muted">
+            Real import resolution across <span class="font-mono text-text">src/</span> and monorepo layouts.
+            Both directions at once: <span style="color:var(--color-cyan)">what it imports</span> and
+            <span style="color:var(--color-violet)"> who imports it</span>.
+          </p>
+          <div class="mt-6 flex gap-5 font-mono text-sm">
+            <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full" style="background:var(--color-cyan)"></span>imports</span>
+            <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full" style="background:var(--color-violet)"></span>imported by</span>
+          </div>
+        </article>
+
+        <!-- 04 context -->
+        <article class="step flex flex-col justify-center py-14 lg:min-h-screen lg:py-16" data-scene="context">
+          <p class="eyebrow">04 — context over MCP</p>
+          <h2 class="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">Targeted context, served to your agent</h2>
+          <p class="mt-4 max-w-lg text-muted">
+            Topolox exposes <span class="font-mono text-text">analyze_blast_radius</span>,
+            <span class="font-mono text-text"> get_file_dependencies</span>,
+            <span class="font-mono text-text"> prune_context</span> and search over MCP. One install command wires it
+            into Claude Code, Cursor, Codex, Gemini CLI, and the rest.
+          </p>
+          <div class="mt-7 flex flex-wrap gap-3">
+            <a href="#race" class="btn btn-primary">See the difference</a>
+            <a href="#start" class="btn btn-ghost">Quickstart</a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const clamp = (x: number) => Math.max(0, Math.min(1, x));
+
+  const canvas = document.getElementById("graph") as HTMLCanvasElement | null;
+  const wrap = document.getElementById("graph-wrap") as HTMLElement | null;
+  const tip = document.getElementById("graph-tip");
+  const hudLabel = document.getElementById("hud-label");
+  const hudDot = document.getElementById("hud-dot") as HTMLElement | null;
+  const hudStep = document.getElementById("hud-step");
+
+  if (canvas && wrap) {
+    const ctx = canvas.getContext("2d")!;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const css = (v: string) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+    const ACCENT = css("--color-cyan") || "#7c8aff";
+    const ACCENTB = "#b9c0ff";
+    const VIOLET = css("--color-violet") || "#b6a8ff";
+    const HEAT = css("--color-heat") || "#e8687a";
+    const LINE = css("--color-line") || "#26262b";
+
+    const names = [
+      "config.py", "db.py", "models.py", "utils.py", "logger.py",
+      "auth.py", "api.py", "router.py", "schema.py", "cache.py",
+      "users.py", "orders.py", "payments.py", "email.py", "queue.py",
+      "worker.py", "tasks.py", "server.py", "app.py", "tests.py",
+      "client.ts", "store.ts", "hooks.ts", "ui.tsx", "main.go", "handler.go",
+    ];
+    const idx: Record<string, number> = {};
+    names.forEach((n, i) => (idx[n] = i));
+
+    const edgePairs: [string, string][] = [
+      ["db.py", "config.py"], ["db.py", "utils.py"], ["logger.py", "config.py"],
+      ["models.py", "db.py"], ["schema.py", "models.py"], ["auth.py", "db.py"],
+      ["auth.py", "config.py"], ["cache.py", "config.py"], ["api.py", "models.py"],
+      ["api.py", "auth.py"], ["api.py", "utils.py"], ["router.py", "api.py"],
+      ["users.py", "models.py"], ["users.py", "auth.py"], ["orders.py", "models.py"],
+      ["orders.py", "db.py"], ["payments.py", "orders.py"], ["payments.py", "auth.py"],
+      ["email.py", "config.py"], ["queue.py", "config.py"], ["worker.py", "queue.py"],
+      ["worker.py", "db.py"], ["tasks.py", "worker.py"], ["tasks.py", "models.py"],
+      ["server.py", "router.py"], ["server.py", "config.py"], ["app.py", "server.py"],
+      ["tests.py", "api.py"], ["tests.py", "models.py"], ["client.ts", "store.ts"],
+      ["hooks.ts", "store.ts"], ["ui.tsx", "hooks.ts"], ["ui.tsx", "client.ts"],
+      ["main.go", "handler.go"], ["handler.go", "utils.py"],
+    ];
+    const edges = edgePairs.map(([a, b]) => [idx[a], idx[b]] as [number, number]);
+
+    const importers: number[][] = names.map(() => []);
+    const importsOf: number[][] = names.map(() => []);
+    const adj: number[][] = names.map(() => []);
+    for (const [a, b] of edges) {
+      importers[b].push(a);
+      importsOf[a].push(b);
+      adj[a].push(b);
+      adj[b].push(a);
+    }
+    const deg = names.map((_, i) => adj[i].length);
+
+    type Node = { i: number; name: string; x: number; y: number; vx: number; vy: number; r: number; deg: number; hub: boolean; hl: number; tag: number };
+    let W = 0, H = 0, dpr = 1;
+    const nodes: Node[] = names.map((name, i) => ({
+      i, name, x: 0, y: 0, vx: 0, vy: 0,
+      r: 4 + Math.min(deg[i], 8) * 1.05, deg: deg[i], hub: deg[i] >= 5, hl: 0, tag: 0,
+    }));
+
+    nodes.forEach((n, i) => {
+      const a = (i / nodes.length) * Math.PI * 2 * 3.3;
+      const rad = 60 + (i % 7) * 24;
+      n.x = Math.cos(a) * rad;
+      n.y = Math.sin(a) * rad * 0.8;
+    });
+
+    function resize() {
+      const rect = wrap!.getBoundingClientRect();
+      W = rect.width; H = rect.height;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas!.width = Math.round(W * dpr);
+      canvas!.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+    nodes.forEach((n) => { n.x += W / 2; n.y += H / 2; });
+    new ResizeObserver(() => resize()).observe(wrap);
+
+    function step() {
+      const cx = W / 2, cy = H / 2;
+      for (let a = 0; a < nodes.length; a++) {
+        const na = nodes[a];
+        for (let b = a + 1; b < nodes.length; b++) {
+          const nb = nodes[b];
+          let dx = na.x - nb.x, dy = na.y - nb.y;
+          let d2 = dx * dx + dy * dy;
+          if (d2 < 1) d2 = 1;
+          const f = 2200 / d2, d = Math.sqrt(d2);
+          na.vx += (dx / d) * f; na.vy += (dy / d) * f;
+          nb.vx -= (dx / d) * f; nb.vy -= (dy / d) * f;
+        }
+      }
+      const L = Math.min(W, H) * 0.12 + 44;
+      for (const [a, b] of edges) {
+        const na = nodes[a], nb = nodes[b];
+        const dx = nb.x - na.x, dy = nb.y - na.y;
+        const d = Math.sqrt(dx * dx + dy * dy) || 1;
+        const f = (d - L) * 0.012;
+        na.vx += (dx / d) * f; na.vy += (dy / d) * f;
+        nb.vx -= (dx / d) * f; nb.vy -= (dy / d) * f;
+      }
+      for (const n of nodes) {
+        n.vx += (cx - n.x) * 0.0017; n.vy += (cy - n.y) * 0.0017;
+        n.vx *= 0.86; n.vy *= 0.86;
+        n.x += n.vx; n.y += n.vy;
+        const m = 24;
+        n.x = Math.max(m, Math.min(W - m, n.x));
+        n.y = Math.max(m, Math.min(H - m, n.y));
+      }
+    }
+
+    // ---- scenes ----
+    type Scene = { name: string; kind: string; dim: boolean; t0: number; depth?: Map<number, number>; set?: Set<number>; tagOf?: Map<number, number>; centerId?: number };
+    const HUD: Record<string, { dot: string; text: string }> = {
+      intro: { dot: ACCENT, text: "your codebase — mapped as a graph" },
+      index: { dot: ACCENT, text: "indexing… 410 nodes · 544 edges" },
+      blast: { dot: HEAT, text: "editing db.py → 13 files impacted · 1.1ms" },
+      deps: { dot: VIOLET, text: "api.py — 3 imports · 2 imported-by" },
+      context: { dot: ACCENT, text: "serving targeted context over MCP" },
+    };
+    const STEPNO: Record<string, string> = { intro: "01", index: "01", blast: "02", deps: "03", context: "04" };
+
+    function bfsImpacted(src: number) {
+      const set = new Map<number, number>();
+      set.set(src, 0);
+      let frontier = [src];
+      for (let d = 1; d <= 4 && frontier.length; d++) {
+        const next: number[] = [];
+        for (const node of frontier) for (const imp of importers[node]) if (!set.has(imp)) { set.set(imp, d); next.push(imp); }
+        frontier = next;
+      }
+      return set;
+    }
+
+    let scene: Scene = { name: "intro", kind: "intro", dim: false, t0: 0 };
+    function setScene(name: string, now: number) {
+      if (scene.name === name) return;
+      const base: Scene = { name, kind: name, dim: false, t0: now };
+      if (name === "blast") {
+        base.dim = true; base.depth = bfsImpacted(idx["db.py"]); base.centerId = idx["db.py"];
+      } else if (name === "deps") {
+        base.dim = true;
+        const c = idx["api.py"];
+        const tagOf = new Map<number, number>();
+        const set = new Set<number>();
+        for (const d of importsOf[c]) { tagOf.set(d, 2); set.add(d); }
+        for (const d of importers[c]) { tagOf.set(d, 3); set.add(d); }
+        base.tagOf = tagOf; base.set = set; base.centerId = c;
+      }
+      scene = base;
+      if (hudLabel) hudLabel.textContent = HUD[name]?.text ?? "";
+      if (hudDot) hudDot.style.background = HUD[name]?.dot ?? ACCENT;
+      if (hudStep) hudStep.textContent = STEPNO[name] ?? "01";
+    }
+
+    function updateHighlights(now: number) {
+      const el = now - scene.t0;
+      const k = scene.kind;
+      if (k === "blast" && scene.depth) {
+        for (const n of nodes) {
+          const d = scene.depth.get(n.i);
+          if (d !== undefined) { n.tag = 1; n.hl = Math.max(n.hl, clamp((el - d * 220) / 320)); }
+          else { n.tag = 0; n.hl *= 0.9; }
+        }
+      } else if (k === "deps" && scene.tagOf) {
+        for (const n of nodes) {
+          const t = (scene.set!.has(n.i) || n.i === scene.centerId) ? 1 : 0;
+          n.hl += (t - n.hl) * 0.12;
+          n.tag = scene.tagOf.get(n.i) ?? 0;
+        }
+      } else if (k === "index") {
+        const dur = 2200, sx = ((el % dur) / dur) * (W + 240) - 120;
+        for (const n of nodes) { n.tag = 4; n.hl = Math.max(n.hl * 0.85, clamp(1 - Math.abs(n.x - sx) / 130)); }
+      } else if (k === "context") {
+        const c = nodes[idx["db.py"]];
+        const dur = 2600, maxR = Math.min(W, H) * 0.42, rr = ((el % dur) / dur) * maxR;
+        for (const n of nodes) { const dist = Math.hypot(n.x - c.x, n.y - c.y); n.tag = 4; n.hl = Math.max(n.hl * 0.8, clamp(1 - Math.abs(dist - rr) / 72)); }
+      } else {
+        for (const n of nodes) { n.hl *= 0.9; n.tag = 0; }
+      }
+    }
+
+    let intro = 0, hovered = -1;
+    function draw(now: number) {
+      ctx.clearRect(0, 0, W, H);
+      intro = Math.min(1, intro + 0.013);
+      updateHighlights(now);
+      if (hovered >= 0) {
+        nodes[hovered].hl = Math.max(nodes[hovered].hl, 0.85);
+        for (const j of adj[hovered]) nodes[j].hl = Math.max(nodes[j].hl, 0.55);
+      }
+
+      for (const [a, b] of edges) {
+        const na = nodes[a], nb = nodes[b];
+        const active = Math.min(na.hl, nb.hl);
+        ctx.beginPath(); ctx.moveTo(na.x, na.y); ctx.lineTo(nb.x, nb.y);
+        if (active > 0.06) {
+          ctx.strokeStyle = scene.kind === "blast" ? HEAT : ACCENT;
+          ctx.globalAlpha = 0.2 + active * 0.5; ctx.lineWidth = 1 + active * 1.2;
+        } else {
+          const near = hovered >= 0 && (a === hovered || b === hovered);
+          ctx.strokeStyle = near ? ACCENT : LINE;
+          ctx.globalAlpha = (near ? 0.55 : 0.3) * intro; ctx.lineWidth = near ? 1.2 : 0.8;
+        }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      for (const n of nodes) {
+        let color = n.hub ? VIOLET : ACCENT;
+        if (n.tag === 1) color = HEAT;
+        else if (n.tag === 2) color = ACCENT;
+        else if (n.tag === 3) color = VIOLET;
+        else if (n.tag === 4) color = ACCENTB;
+        const isCenter = n.i === scene.centerId && (scene.kind === "blast" || scene.kind === "deps");
+        if (isCenter) color = "#ffffff";
+
+        let r = n.r + n.hl * (n.tag === 1 ? 3 : 2) + (isCenter ? 3 : 0);
+        const a = isCenter ? 1 : scene.dim ? 0.26 + n.hl * 0.74 : 0.76 + n.hl * 0.24;
+
+        ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = color; ctx.globalAlpha = a * intro;
+        ctx.shadowBlur = n.hl > 0.05 ? 11 * n.hl : n.i === hovered ? 9 : 3;
+        ctx.shadowColor = color; ctx.fill(); ctx.shadowBlur = 0;
+
+        if (n.i === hovered || n.hl > 0.55 || isCenter) {
+          ctx.globalAlpha = intro; ctx.fillStyle = "#ededf0";
+          ctx.font = "500 11px 'JetBrains Mono', monospace";
+          ctx.fillText(n.name, n.x + r + 5, n.y + 3);
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function nodeAt(px: number, py: number) {
+      let best = -1, bestD = 16 * 16;
+      for (const n of nodes) {
+        const dx = n.x - px, dy = n.y - py, d = dx * dx + dy * dy;
+        if (d < bestD && d < (n.r + 9) * (n.r + 9)) { bestD = d; best = n.i; }
+      }
+      return best;
+    }
+    canvas.addEventListener("pointermove", (e) => {
+      const rect = canvas!.getBoundingClientRect();
+      const px = e.clientX - rect.left, py = e.clientY - rect.top;
+      hovered = nodeAt(px, py);
+      if (hovered >= 0 && tip) {
+        tip.textContent = nodes[hovered].name + " · " + nodes[hovered].deg + " links";
+        (tip as HTMLElement).style.left = px + 14 + "px";
+        (tip as HTMLElement).style.top = py + 14 + "px";
+        tip.classList.remove("hidden");
+        canvas!.style.cursor = "pointer";
+      } else if (tip) { tip.classList.add("hidden"); canvas!.style.cursor = "default"; }
+    });
+    canvas.addEventListener("pointerleave", () => { hovered = -1; tip?.classList.add("hidden"); });
+    canvas.addEventListener("pointerdown", (e) => {
+      const rect = canvas!.getBoundingClientRect();
+      const hit = nodeAt(e.clientX - rect.left, e.clientY - rect.top);
+      if (hit >= 0) {
+        scene = { name: "blast", kind: "blast", dim: true, t0: performance.now(), depth: bfsImpacted(hit), centerId: hit };
+        if (hudDot) hudDot.style.background = HEAT;
+        if (hudLabel) hudLabel.textContent = `editing ${nodes[hit].name} → ${scene.depth!.size - 1} files impacted · 1.1ms`;
+      }
+    });
+
+    // ---- scroll → scene ----
+    const stepEls = Array.from(document.querySelectorAll<HTMLElement>(".step"));
+    if (reduce) {
+      for (let i = 0; i < 420; i++) step();
+      stepEls.forEach((s) => s.classList.add("is-active"));
+      scene = { name: "blast", kind: "blast", dim: true, t0: -10000, depth: bfsImpacted(idx["db.py"]), centerId: idx["db.py"] };
+      intro = 1;
+      updateHighlights(0); draw(0);
+    } else {
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) {
+              stepEls.forEach((s) => s.classList.toggle("is-active", s === e.target));
+              setScene((e.target as HTMLElement).dataset.scene || "intro", performance.now());
+            }
+          }
+        },
+        { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
+      );
+      stepEls.forEach((s) => io.observe(s));
+      stepEls[0]?.classList.add("is-active");
+
+      let visible = true;
+      new IntersectionObserver((ents) => { visible = ents[0].isIntersecting; }, { threshold: 0 }).observe(wrap);
+      function frame(now: number) {
+        if (visible) { step(); draw(now); }
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }
+  }
+</script>
+
+<style>
+  .step {
+    transition: opacity 0.5s ease;
+  }
+  @media (min-width: 1024px) {
+    .step {
+      opacity: 0.34;
+    }
+    .step.is-active {
+      opacity: 1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .step {
+      opacity: 1;
+      transition: none;
+    }
+  }
+</style>

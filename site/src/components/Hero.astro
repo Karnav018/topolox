@@ -1,0 +1,319 @@
+---
+const repo = "https://github.com/Karnav018/topolox";
+const chips = [
+  { scene: "index", label: "Index" },
+  { scene: "blast", label: "Blast radius" },
+  { scene: "deps", label: "Dependencies" },
+  { scene: "context", label: "Context · MCP" },
+];
+---
+
+<section id="top" class="relative">
+  <div class="mx-auto flex min-h-screen max-w-6xl items-center px-6 pb-12 pt-28">
+    <div class="grid w-full items-center gap-10 lg:grid-cols-2 lg:gap-16">
+      <!-- copy -->
+      <div data-reveal>
+        <span class="pill inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs text-muted">
+          <span class="h-1.5 w-1.5 rounded-full" style="background:var(--color-accent)"></span>
+          Open source · MIT · every MCP agent
+        </span>
+
+        <h1 class="mt-6 text-[2.6rem] leading-[1.06] tracking-[-0.015em] sm:text-6xl">
+          Give your agent a <span class="text-gradient">map</span>, not a pile of files.
+        </h1>
+
+        <p class="mt-6 max-w-xl text-lg leading-relaxed text-muted">
+          Topolox indexes your codebase into an embedded graph and serves precise context to Claude Code,
+          Cursor, and every MCP agent — so they understand a change instead of reading the whole repo to find it.
+        </p>
+
+        <div class="mt-8 flex flex-wrap items-center gap-3">
+          <button
+            data-copy="pip install topolox"
+            class="term group flex items-center gap-3 px-4 py-2.5 text-sm transition hover:border-accent"
+            aria-label="Copy install command"
+          >
+            <span class="select-none text-faint">$</span>
+            <span class="text-text">pip install topolox</span>
+            <span class="ml-1 inline-flex items-center gap-1 text-xs text-faint transition group-hover:text-accent-ink">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path>
+              </svg>
+              <span data-copy-label>copy</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="mt-5 flex flex-wrap items-center gap-3">
+          <a href="#start" class="btn btn-primary">Get started</a>
+          <a href={repo} target="_blank" rel="noopener" class="btn btn-ghost">
+            <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"></path>
+            </svg>
+            Star on GitHub <span class="text-faint" data-stars>★</span>
+          </a>
+        </div>
+
+        <div class="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
+          <span><span class="font-semibold text-text">≈5.4×</span> less context</span>
+          <span class="text-border-2">·</span>
+          <span><span class="font-semibold text-text">&lt;1ms</span> queries</span>
+          <span class="text-border-2">·</span>
+          <span><span class="font-semibold text-text">14+</span> languages</span>
+          <span class="text-border-2">·</span>
+          <span><span class="font-semibold text-text">100%</span> local</span>
+        </div>
+      </div>
+
+      <!-- graph panel -->
+      <div data-reveal style="--reveal-delay:120ms">
+        <div id="graph-wrap" class="panel relative h-[360px] sm:h-[440px] lg:h-[540px]">
+          <canvas id="graph" class="absolute inset-0 h-full w-full"></canvas>
+          <div id="graph-tip" class="pointer-events-none absolute z-20 hidden rounded-md border border-white/10 bg-black/55 px-2 py-1 font-mono text-xs text-[#cdd6cb]"></div>
+          <div class="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-center justify-between px-4 py-3 font-mono text-[11px]">
+            <span class="inline-flex items-center gap-2 text-[#c2cdc2]">
+              <span id="hud-dot" class="h-2 w-2 rounded-full" style="background:#5fd3a3"></span>
+              <span id="hud-label">your codebase, mapped</span>
+            </span>
+            <span class="text-[#7e887e]">click a node ↗</span>
+          </div>
+        </div>
+
+        <div class="mt-3 flex flex-wrap gap-2">
+          {
+            chips.map((c) => (
+              <button
+                data-chip={c.scene}
+                class="chip rounded-full border border-border-2 px-3 py-1.5 text-xs text-muted transition hover:border-accent hover:text-accent-ink"
+              >
+                {c.label}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .chip.is-on {
+    border-color: var(--color-accent);
+    color: #fcf7f2;
+    background: var(--color-accent);
+  }
+</style>
+
+<script>
+  const clamp = (x: number) => Math.max(0, Math.min(1, x));
+  const canvas = document.getElementById("graph") as HTMLCanvasElement | null;
+  const wrap = document.getElementById("graph-wrap") as HTMLElement | null;
+  const tip = document.getElementById("graph-tip");
+  const hudLabel = document.getElementById("hud-label");
+  const hudDot = document.getElementById("hud-dot") as HTMLElement | null;
+
+  if (canvas && wrap) {
+    const ctx = canvas.getContext("2d")!;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // panel palette (on dark warm panel)
+    const NODE = "#c9d3c8", HUB = "#5fd3a3", HEATC = "#e8765a";
+    const DEP = "#5fd3a3", DEPENDT = "#e6a64d", PULSE = "#cfeede", LINEC = "#33403a", CENTER = "#f1f5ee";
+
+    const names = [
+      "config.py", "db.py", "models.py", "utils.py", "logger.py",
+      "auth.py", "api.py", "router.py", "schema.py", "cache.py",
+      "users.py", "orders.py", "payments.py", "email.py", "queue.py",
+      "worker.py", "tasks.py", "server.py", "app.py", "tests.py",
+      "client.ts", "store.ts", "hooks.ts", "ui.tsx", "main.go", "handler.go",
+    ];
+    const idx: Record<string, number> = {};
+    names.forEach((n, i) => (idx[n] = i));
+    const edgePairs: [string, string][] = [
+      ["db.py", "config.py"], ["db.py", "utils.py"], ["logger.py", "config.py"],
+      ["models.py", "db.py"], ["schema.py", "models.py"], ["auth.py", "db.py"],
+      ["auth.py", "config.py"], ["cache.py", "config.py"], ["api.py", "models.py"],
+      ["api.py", "auth.py"], ["api.py", "utils.py"], ["router.py", "api.py"],
+      ["users.py", "models.py"], ["users.py", "auth.py"], ["orders.py", "models.py"],
+      ["orders.py", "db.py"], ["payments.py", "orders.py"], ["payments.py", "auth.py"],
+      ["email.py", "config.py"], ["queue.py", "config.py"], ["worker.py", "queue.py"],
+      ["worker.py", "db.py"], ["tasks.py", "worker.py"], ["tasks.py", "models.py"],
+      ["server.py", "router.py"], ["server.py", "config.py"], ["app.py", "server.py"],
+      ["tests.py", "api.py"], ["tests.py", "models.py"], ["client.ts", "store.ts"],
+      ["hooks.ts", "store.ts"], ["ui.tsx", "hooks.ts"], ["ui.tsx", "client.ts"],
+      ["main.go", "handler.go"], ["handler.go", "utils.py"],
+    ];
+    const edges = edgePairs.map(([a, b]) => [idx[a], idx[b]] as [number, number]);
+    const importers: number[][] = names.map(() => []);
+    const importsOf: number[][] = names.map(() => []);
+    const adj: number[][] = names.map(() => []);
+    for (const [a, b] of edges) { importers[b].push(a); importsOf[a].push(b); adj[a].push(b); adj[b].push(a); }
+    const deg = names.map((_, i) => adj[i].length);
+
+    type Node = { i: number; name: string; x: number; y: number; vx: number; vy: number; r: number; hub: boolean; deg: number; hl: number; tag: number };
+    let W = 0, H = 0, dpr = 1;
+    const nodes: Node[] = names.map((name, i) => ({
+      i, name, x: 0, y: 0, vx: 0, vy: 0, r: 4 + Math.min(deg[i], 8) * 1.05, hub: deg[i] >= 5, deg: deg[i], hl: 0, tag: 0,
+    }));
+    nodes.forEach((n, i) => { const a = (i / nodes.length) * Math.PI * 2 * 3.3; const rad = 56 + (i % 7) * 22; n.x = Math.cos(a) * rad; n.y = Math.sin(a) * rad * 0.85; });
+
+    function resize() {
+      const rect = wrap!.getBoundingClientRect();
+      W = rect.width; H = rect.height; dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas!.width = Math.round(W * dpr); canvas!.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+    nodes.forEach((n) => { n.x += W / 2; n.y += H / 2; });
+    new ResizeObserver(() => resize()).observe(wrap);
+
+    function step() {
+      const cx = W / 2, cy = H / 2;
+      for (let a = 0; a < nodes.length; a++) {
+        const na = nodes[a];
+        for (let b = a + 1; b < nodes.length; b++) {
+          const nb = nodes[b];
+          let dx = na.x - nb.x, dy = na.y - nb.y, d2 = dx * dx + dy * dy;
+          if (d2 < 1) d2 = 1;
+          const f = 2000 / d2, d = Math.sqrt(d2);
+          na.vx += (dx / d) * f; na.vy += (dy / d) * f; nb.vx -= (dx / d) * f; nb.vy -= (dy / d) * f;
+        }
+      }
+      const L = Math.min(W, H) * 0.11 + 40;
+      for (const [a, b] of edges) {
+        const na = nodes[a], nb = nodes[b];
+        const dx = nb.x - na.x, dy = nb.y - na.y, d = Math.sqrt(dx * dx + dy * dy) || 1, f = (d - L) * 0.013;
+        na.vx += (dx / d) * f; na.vy += (dy / d) * f; nb.vx -= (dx / d) * f; nb.vy -= (dy / d) * f;
+      }
+      for (const n of nodes) {
+        n.vx += (cx - n.x) * 0.0018; n.vy += (cy - n.y) * 0.0018; n.vx *= 0.85; n.vy *= 0.85;
+        n.x += n.vx; n.y += n.vy;
+        const m = 22; n.x = Math.max(m, Math.min(W - m, n.x)); n.y = Math.max(m, Math.min(H - m, n.y));
+      }
+    }
+
+    type Scene = { name: string; kind: string; dim: boolean; t0: number; depth?: Map<number, number>; set?: Set<number>; tagOf?: Map<number, number>; centerId?: number };
+    const HUD: Record<string, { dot: string; text: string }> = {
+      intro: { dot: HUB, text: "your codebase, mapped" },
+      index: { dot: PULSE, text: "indexing · 410 nodes · 544 edges" },
+      blast: { dot: HEATC, text: "edit db.py → 13 files impacted · 1.1ms" },
+      deps: { dot: DEPENDT, text: "api.py · 3 imports · 2 imported-by" },
+      context: { dot: HUB, text: "serving targeted context over MCP" },
+    };
+    function bfsImpacted(src: number) {
+      const set = new Map<number, number>(); set.set(src, 0);
+      let f = [src];
+      for (let d = 1; d <= 4 && f.length; d++) { const nx: number[] = []; for (const node of f) for (const imp of importers[node]) if (!set.has(imp)) { set.set(imp, d); nx.push(imp); } f = nx; }
+      return set;
+    }
+
+    let scene: Scene = { name: "intro", kind: "intro", dim: false, t0: 0 };
+    const chipEls = Array.from(document.querySelectorAll<HTMLElement>("[data-chip]"));
+    function setScene(name: string, now: number) {
+      const base: Scene = { name, kind: name, dim: false, t0: now };
+      if (name === "blast") { base.dim = true; base.depth = bfsImpacted(idx["db.py"]); base.centerId = idx["db.py"]; }
+      else if (name === "deps") {
+        base.dim = true; const c = idx["api.py"]; const tagOf = new Map<number, number>(); const set = new Set<number>();
+        for (const d of importsOf[c]) { tagOf.set(d, 2); set.add(d); }
+        for (const d of importers[c]) { tagOf.set(d, 3); set.add(d); }
+        base.tagOf = tagOf; base.set = set; base.centerId = c;
+      }
+      scene = base;
+      if (hudLabel) hudLabel.textContent = HUD[name]?.text ?? "";
+      if (hudDot) hudDot.style.background = HUD[name]?.dot ?? HUB;
+      chipEls.forEach((c) => c.classList.toggle("is-on", c.dataset.chip === name));
+    }
+
+    function updateHighlights(now: number) {
+      const el = now - scene.t0, k = scene.kind;
+      if (k === "blast" && scene.depth) {
+        for (const n of nodes) { const d = scene.depth.get(n.i); if (d !== undefined) { n.tag = 1; n.hl = Math.max(n.hl, clamp((el - d * 210) / 300)); } else { n.tag = 0; n.hl *= 0.9; } }
+      } else if (k === "deps" && scene.tagOf) {
+        for (const n of nodes) { const t = (scene.set!.has(n.i) || n.i === scene.centerId) ? 1 : 0; n.hl += (t - n.hl) * 0.12; n.tag = scene.tagOf.get(n.i) ?? 0; }
+      } else if (k === "index") {
+        const dur = 2000, sx = ((el % dur) / dur) * (W + 220) - 110;
+        for (const n of nodes) { n.tag = 4; n.hl = Math.max(n.hl * 0.85, clamp(1 - Math.abs(n.x - sx) / 120)); }
+      } else if (k === "context") {
+        const c = nodes[idx["db.py"]], dur = 2400, maxR = Math.min(W, H) * 0.45, rr = ((el % dur) / dur) * maxR;
+        for (const n of nodes) { const dist = Math.hypot(n.x - c.x, n.y - c.y); n.tag = 4; n.hl = Math.max(n.hl * 0.8, clamp(1 - Math.abs(dist - rr) / 66)); }
+      } else { for (const n of nodes) { n.hl *= 0.9; n.tag = 0; } }
+    }
+
+    let intro = 0, hovered = -1;
+    function draw(now: number) {
+      ctx.clearRect(0, 0, W, H);
+      intro = Math.min(1, intro + 0.014);
+      updateHighlights(now);
+      if (hovered >= 0) { nodes[hovered].hl = Math.max(nodes[hovered].hl, 0.85); for (const j of adj[hovered]) nodes[j].hl = Math.max(nodes[j].hl, 0.5); }
+
+      for (const [a, b] of edges) {
+        const na = nodes[a], nb = nodes[b], active = Math.min(na.hl, nb.hl);
+        ctx.beginPath(); ctx.moveTo(na.x, na.y); ctx.lineTo(nb.x, nb.y);
+        if (active > 0.06) { ctx.strokeStyle = scene.kind === "blast" ? HEATC : HUB; ctx.globalAlpha = 0.25 + active * 0.5; ctx.lineWidth = 1 + active * 1.2; }
+        else { const near = hovered >= 0 && (a === hovered || b === hovered); ctx.strokeStyle = near ? HUB : LINEC; ctx.globalAlpha = (near ? 0.6 : 0.42) * intro; ctx.lineWidth = near ? 1.2 : 0.8; }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      for (const n of nodes) {
+        let color = n.hub ? HUB : NODE;
+        if (n.tag === 1) color = HEATC; else if (n.tag === 2) color = DEP; else if (n.tag === 3) color = DEPENDT; else if (n.tag === 4) color = PULSE;
+        const isCenter = n.i === scene.centerId && (scene.kind === "blast" || scene.kind === "deps");
+        if (isCenter) color = CENTER;
+        const r = n.r + n.hl * (n.tag === 1 ? 3 : 2) + (isCenter ? 3 : 0);
+        const a = isCenter ? 1 : scene.dim ? 0.28 + n.hl * 0.72 : 0.82 + n.hl * 0.18;
+        ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = color; ctx.globalAlpha = a * intro;
+        ctx.shadowBlur = n.hl > 0.05 ? 12 * n.hl : n.i === hovered ? 9 : 4; ctx.shadowColor = color;
+        ctx.fill(); ctx.shadowBlur = 0;
+        if (n.i === hovered || n.hl > 0.55 || isCenter) { ctx.globalAlpha = intro; ctx.fillStyle = "#dfe8df"; ctx.font = "500 11px 'JetBrains Mono', monospace"; ctx.fillText(n.name, n.x + r + 5, n.y + 3); }
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function nodeAt(px: number, py: number) {
+      let best = -1, bestD = 16 * 16;
+      for (const n of nodes) { const dx = n.x - px, dy = n.y - py, d = dx * dx + dy * dy; if (d < bestD && d < (n.r + 9) * (n.r + 9)) { bestD = d; best = n.i; } }
+      return best;
+    }
+    let pausedUntil = 0;
+    canvas.addEventListener("pointermove", (e) => {
+      const rect = canvas!.getBoundingClientRect(); const px = e.clientX - rect.left, py = e.clientY - rect.top; hovered = nodeAt(px, py);
+      if (hovered >= 0 && tip) { tip.textContent = nodes[hovered].name + " · " + nodes[hovered].deg + " links"; (tip as HTMLElement).style.left = px + 12 + "px"; (tip as HTMLElement).style.top = py + 12 + "px"; tip.classList.remove("hidden"); canvas!.style.cursor = "pointer"; }
+      else if (tip) { tip.classList.add("hidden"); canvas!.style.cursor = "default"; }
+    });
+    canvas.addEventListener("pointerleave", () => { hovered = -1; tip?.classList.add("hidden"); });
+    canvas.addEventListener("pointerdown", (e) => {
+      const rect = canvas!.getBoundingClientRect(); const hit = nodeAt(e.clientX - rect.left, e.clientY - rect.top);
+      if (hit >= 0) {
+        const now = performance.now(); scene = { name: "blast", kind: "blast", dim: true, t0: now, depth: bfsImpacted(hit), centerId: hit };
+        if (hudDot) hudDot.style.background = HEATC; if (hudLabel) hudLabel.textContent = `edit ${nodes[hit].name} → ${scene.depth!.size - 1} files impacted · 1.1ms`;
+        chipEls.forEach((c) => c.classList.toggle("is-on", c.dataset.chip === "blast"));
+        pausedUntil = now + 9000;
+      }
+    });
+
+    const order = ["index", "blast", "deps", "context"];
+    let ci = 0;
+    chipEls.forEach((c) => c.addEventListener("click", () => {
+      const now = performance.now(); const name = c.dataset.chip!; setScene(name, now); ci = Math.max(0, order.indexOf(name)); pausedUntil = now + 9000;
+    }));
+
+    if (reduce) {
+      for (let i = 0; i < 420; i++) step();
+      intro = 1; setScene("deps", -10000); updateHighlights(0); draw(0);
+    } else {
+      let visible = true;
+      new IntersectionObserver((ents) => { visible = ents[0].isIntersecting; }, { threshold: 0 }).observe(wrap);
+      let nextSwitch = performance.now() + 2400;
+      function frame(now: number) {
+        if (visible) {
+          step(); draw(now);
+          if (now > nextSwitch && now > pausedUntil) { ci = (ci + 1) % order.length; setScene(order[ci], now); nextSwitch = now + 3600; }
+        }
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }
+  }
+</script>

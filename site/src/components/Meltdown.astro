@@ -1,0 +1,159 @@
+---
+const stats = [
+  { v: "5.4×", l: "median context cut", sub: "across sampled files" },
+  { v: "8.2×", l: "mean context cut", sub: "heavier files win more" },
+  { v: "0.8ms", l: "graph query p50", sub: "1.1ms p95" },
+  { v: "14+", l: "languages", sub: "tree-sitter grammars" },
+];
+---
+
+<section id="numbers" class="relative mx-auto max-w-6xl px-6 py-24 sm:py-28">
+  <div data-reveal class="mx-auto max-w-2xl text-center">
+    <p class="eyebrow justify-center">the payoff</p>
+    <h2 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">
+      Your agent wastes most of its context re-reading code.
+    </h2>
+    <p class="mt-4 text-muted">
+      Tokens to answer one blast-radius question — reading the files, versus asking Topolox.
+    </p>
+  </div>
+
+  <div id="meltdown" class="mt-14 mx-auto max-w-3xl" data-reveal>
+    <div class="card overflow-hidden p-8 sm:p-12 text-center">
+      <div class="font-mono text-sm tracking-widest uppercase text-muted">
+        <span data-mode>reading files</span>
+      </div>
+
+      <div data-bignum class="hot mt-3 font-mono text-6xl sm:text-8xl font-extrabold tabular-nums">0</div>
+      <div class="mt-1 text-sm text-muted">tokens</div>
+
+      <!-- gauge -->
+      <div class="relative mt-8 h-3 w-full overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--color-line)_70%,transparent)]">
+        <div data-gauge class="h-full w-0 rounded-full" style="background:linear-gradient(90deg,var(--color-amber),var(--color-heat))"></div>
+      </div>
+      <div class="mt-2 flex justify-between font-mono text-xs text-muted">
+        <span>0</span>
+        <span>128k context window</span>
+      </div>
+
+      <!-- stamp -->
+      <div data-stamp class="stamp mt-9 inline-flex items-center gap-2 rounded-full border border-cyan/40 bg-[color-mix(in_srgb,var(--color-cyan)_12%,transparent)] px-4 py-2 text-cyan font-semibold">
+        <span class="text-xl">5.4×</span> less context, same answer
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+    {
+      stats.map((s, i) => (
+        <div class="card p-5 text-center" data-reveal style={`--reveal-delay:${i * 90}ms`}>
+          <div class="font-mono text-2xl font-bold text-gradient">{s.v}</div>
+          <div class="mt-1 text-sm font-medium">{s.l}</div>
+          <div class="mt-0.5 text-xs text-muted">{s.sub}</div>
+        </div>
+      ))
+    }
+  </div>
+</section>
+
+<style>
+  [data-bignum].hot {
+    color: var(--color-heat);
+    text-shadow: 0 0 20px color-mix(in srgb, var(--color-heat) 32%, transparent);
+    animation: heat-shake 0.13s linear infinite;
+  }
+  [data-bignum].cool {
+    color: var(--color-cyan);
+    text-shadow: 0 0 20px color-mix(in srgb, var(--color-cyan) 30%, transparent);
+    transition: color 0.5s ease, text-shadow 0.5s ease;
+  }
+  @keyframes heat-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-0.8px); }
+    75% { transform: translateX(0.8px); }
+  }
+  [data-stamp] {
+    opacity: 0;
+    transform: scale(0.6) rotate(-6deg);
+  }
+  [data-stamp].in {
+    opacity: 1;
+    transform: scale(1) rotate(-3deg);
+    transition: opacity 0.3s ease, transform 0.45s cubic-bezier(0.18, 1.4, 0.4, 1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-bignum].hot { animation: none; }
+    [data-stamp] { opacity: 1; transform: none; transition: none; }
+  }
+</style>
+
+<script>
+  const root = document.getElementById("meltdown");
+  if (root) {
+    const bignum = root.querySelector("[data-bignum]") as HTMLElement;
+    const gauge = root.querySelector("[data-gauge]") as HTMLElement;
+    const mode = root.querySelector("[data-mode]") as HTMLElement;
+    const stamp = root.querySelector("[data-stamp]") as HTMLElement;
+    const WINDOW = 128000;
+    const PEAK = 120326;
+    const LOW = 11647;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const fmt = (n: number) => Math.round(n).toLocaleString("en-US");
+    const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    function animate(from: number, to: number, dur: number, onDone?: () => void) {
+      const start = performance.now();
+      function tick(now: number) {
+        const t = Math.min(1, (now - start) / dur);
+        const v = from + (to - from) * easeOut(t);
+        bignum.textContent = fmt(v);
+        gauge.style.width = ((v / WINDOW) * 100).toFixed(1) + "%";
+        if (t < 1) requestAnimationFrame(tick);
+        else onDone?.();
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function run() {
+      if (reduce) {
+        bignum.textContent = fmt(LOW);
+        bignum.classList.remove("hot");
+        bignum.classList.add("cool");
+        gauge.style.width = ((LOW / WINDOW) * 100).toFixed(1) + "%";
+        gauge.style.background = "var(--color-cyan)";
+        mode.textContent = "with topolox";
+        stamp.classList.add("in");
+        return;
+      }
+      bignum.classList.add("hot");
+      mode.textContent = "reading files";
+      animate(0, PEAK, 1600, () => {
+        setTimeout(() => {
+          bignum.classList.remove("hot");
+          bignum.classList.add("cool");
+          mode.textContent = "with topolox";
+          gauge.style.transition = "background 0.5s ease";
+          gauge.style.background = "var(--color-cyan)";
+          animate(PEAK, LOW, 1400, () => stamp.classList.add("in"));
+        }, 850);
+      });
+    }
+
+    let started = false;
+    if (reduce) {
+      run();
+    } else {
+      const io = new IntersectionObserver(
+        (ents) => {
+          if (ents[0].isIntersecting && !started) {
+            started = true;
+            run();
+          }
+        },
+        { threshold: 0.45 },
+      );
+      io.observe(root);
+    }
+  }
+</script>

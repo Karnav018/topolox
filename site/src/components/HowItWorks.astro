@@ -1,0 +1,52 @@
+---
+const steps = [
+  {
+    n: "01",
+    cmd: "topolox index .",
+    title: "Build the graph",
+    body: "Tree-sitter parses your repo into a graph of files, symbols, and imports — stored in an embedded Kùzu graph DB + LanceDB vectors. No server, no cloud, no API key.",
+    accent: "var(--color-cyan)",
+  },
+  {
+    n: "02",
+    cmd: "topolox mcp install",
+    title: "Connect your agent",
+    body: "One command registers Topolox as an MCP server for Claude Code, Cursor, Codex CLI, Gemini CLI, VS Code, Windsurf, and Claude Desktop. Restart the agent and it's wired in.",
+    accent: "var(--color-violet)",
+  },
+  {
+    n: "03",
+    cmd: "agent → asks the graph",
+    title: "Targeted context, not file dumps",
+    body: "Instead of grepping and reading ten files, the agent asks: what imports this, what's the blast radius, what are the dependencies — and gets a small, exact answer back in under a millisecond.",
+    accent: "var(--color-heat)",
+  },
+];
+---
+
+<section id="how" class="relative mx-auto max-w-6xl px-6 py-24 sm:py-28">
+  <div data-reveal class="max-w-2xl">
+    <p class="eyebrow">how it works</p>
+    <h2 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">Three commands from repo to agent memory</h2>
+    <p class="mt-4 text-muted">No infrastructure to run. Everything is embedded and local.</p>
+  </div>
+
+  <div class="mt-12 grid gap-5 md:grid-cols-3">
+    {
+      steps.map((s, i) => (
+        <div class="card p-6" data-reveal style={`--reveal-delay:${i * 120}ms`}>
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-sm text-muted">{s.n}</span>
+            <span class="h-2.5 w-2.5 rounded-full" style={`background:${s.accent};box-shadow:0 0 16px ${s.accent}`} />
+          </div>
+          <div class="mt-5 rounded-lg border border-line bg-[color-mix(in_srgb,#05060f_85%,transparent)] px-3 py-2 font-mono text-sm">
+            <span class="text-muted select-none">$ </span>
+            <span class="text-text">{s.cmd}</span>
+          </div>
+          <h3 class="mt-5 text-lg font-semibold">{s.title}</h3>
+          <p class="mt-2 text-sm leading-relaxed text-muted">{s.body}</p>
+        </div>
+      ))
+    }
+  </div>
+</section>

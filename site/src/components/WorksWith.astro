@@ -1,0 +1,26 @@
+---
+const agents = [
+  "Claude Code",
+  "Cursor",
+  "Codex CLI",
+  "Gemini CLI",
+  "VS Code",
+  "Windsurf",
+  "Claude Desktop",
+];
+---
+
+<section class="relative mx-auto max-w-6xl px-6 py-10">
+  <div class="card px-6 py-7" data-reveal>
+    <p class="text-center font-mono text-xs uppercase tracking-widest text-muted">
+      one install · works with every MCP agent
+    </p>
+    <div class="mt-5 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+      {
+        agents.map((a) => (
+          <span class="text-sm font-semibold text-muted/90 transition hover:text-text">{a}</span>
+        ))
+      }
+    </div>
+  </div>
+</section>

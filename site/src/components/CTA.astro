@@ -1,0 +1,29 @@
+---
+const repo = "https://github.com/Karnav018/topolox";
+---
+
+<section class="relative mx-auto max-w-6xl px-6 pb-24">
+  <div class="card relative overflow-hidden px-6 py-16 text-center sm:py-20" data-reveal>
+    <div
+      class="pointer-events-none absolute inset-0 -z-10 opacity-70"
+      style="background:radial-gradient(40rem 20rem at 50% -20%, color-mix(in srgb, var(--color-cyan) 22%, transparent), transparent 70%);"
+    >
+    </div>
+    <h2 class="mx-auto max-w-2xl text-3xl sm:text-4xl font-bold tracking-tight">
+      Give your agent a map. <span class="text-gradient">Keep your context.</span>
+    </h2>
+    <p class="mx-auto mt-4 max-w-xl text-muted">
+      Free, open source, and local. If it saves you context on a real repo, a star helps others find it.
+    </p>
+    <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+      <button data-copy="pip install topolox" class="term flex items-center gap-3 px-4 py-3 text-sm">
+        <span class="text-muted select-none">$</span>
+        <span class="text-text font-mono">pip install topolox</span>
+        <span class="ml-1 text-xs text-muted" data-copy-label>copy</span>
+      </button>
+      <a href={repo} target="_blank" rel="noopener" class="btn btn-primary">
+        Star on GitHub <span data-stars>★</span>
+      </a>
+    </div>
+  </div>
+</section>

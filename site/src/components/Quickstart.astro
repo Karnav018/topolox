@@ -1,0 +1,56 @@
+---
+const repo = "https://github.com/Karnav018/topolox";
+const cmds = [
+  { c: "pip install topolox", note: "install from PyPI" },
+  { c: "topolox index .", note: "build the graph for this repo" },
+  { c: "topolox mcp install", note: "register with your agent, then restart it" },
+];
+---
+
+<section id="start" class="relative mx-auto max-w-6xl px-6 py-24 sm:py-28">
+  <div class="grid items-center gap-10 lg:grid-cols-2">
+    <div data-reveal>
+      <p class="eyebrow">quickstart</p>
+      <h2 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">Up and running in three commands</h2>
+      <p class="mt-4 text-muted">
+        No daemon to babysit, no keys to paste. Index once, install the MCP server, and your agent gains a
+        map of the codebase. Re-index anytime — or run <span class="font-mono text-text">topolox daemon</span> to keep it live.
+      </p>
+      <div class="mt-7 flex flex-wrap gap-3">
+        <a href={repo} target="_blank" rel="noopener" class="btn btn-primary">Read the docs</a>
+        <a href={`${repo}#readme`} target="_blank" rel="noopener" class="btn btn-ghost">View on GitHub</a>
+      </div>
+      <p class="mt-5 text-sm text-muted">
+        Verify it yourself: <span class="font-mono text-text">topolox benchmark .</span> prints your own token-reduction numbers.
+      </p>
+    </div>
+
+    <div class="term" data-reveal>
+      <div class="term-bar">
+        <span class="term-dot" style="background:#ff5f57"></span>
+        <span class="term-dot" style="background:#febc2e"></span>
+        <span class="term-dot" style="background:#28c840"></span>
+        <span class="ml-2 text-xs text-muted">bash</span>
+      </div>
+      <div class="space-y-3 p-5">
+        {
+          cmds.map((cmd) => (
+            <button
+              data-copy={cmd.c}
+              class="group block w-full rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-line hover:bg-[color-mix(in_srgb,var(--color-surface)_55%,transparent)]"
+            >
+              <div class="flex items-center justify-between gap-3">
+                <code class="font-mono text-sm">
+                  <span class="text-muted select-none">$ </span>
+                  <span class="text-text">{cmd.c}</span>
+                </code>
+                <span class="shrink-0 text-xs text-muted opacity-0 transition group-hover:opacity-100" data-copy-label>copy</span>
+              </div>
+              <div class="mt-1 font-mono text-xs text-muted"># {cmd.note}</div>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</section>
