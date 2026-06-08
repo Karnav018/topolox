@@ -423,6 +423,34 @@ def hierarchy(
 
 
 @app.command()
+def impact(
+    name: Annotated[str, typer.Argument(help="Function/method/class name.")],
+    path: Annotated[str | None, typer.Option(help="Restrict the seed to this file.")] = None,
+    depth: Annotated[int, typer.Option(help="Max traversal depth.")] = 4,
+) -> None:
+    """Symbol-level blast radius: what transitively calls or subclasses a symbol."""
+    from topolox.graph.kuzu_store import KuzuGraphStore
+    from topolox.query.impact import SymbolImpactService
+
+    graph = KuzuGraphStore(_require_index(), read_only=True)
+    try:
+        report = SymbolImpactService(graph).analyze(name, path=path, max_depth=depth)
+    finally:
+        graph.close()
+
+    typer.echo(f"Impact of {name} (matched: {', '.join(report.matched) or 'none'}):")
+    typer.echo(
+        f"  {len(report.impacted_symbols)} symbol(s), {len(report.impacted_files)} file(s), "
+        f"{len(report.impacted_tests)} test file(s), depth {report.max_depth}"
+    )
+    for ref in report.impacted_symbols:
+        marker = "  [test]" if ref.path in report.impacted_tests else ""
+        typer.echo(f"    {ref.path}:{ref.start_line:<4} {ref.kind:<8} {ref.qualified_name}{marker}")
+    if not report.impacted_symbols:
+        typer.echo("    (nothing depends on it, or it isn't in the index)")
+
+
+@app.command()
 def ui() -> None:
     """Launch the Textual TUI dashboard."""
     typer.echo(_NOT_YET.format(phase="Phase 3"))

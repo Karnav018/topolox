@@ -16,9 +16,10 @@ _INSTRUCTIONS = (
     "file_outline to see a file's shape without reading it, read_symbol to pull just one "
     "function/class's source instead of the whole file, repo_overview to orient on an "
     "unfamiliar codebase (size, languages, hub files), get_callers / get_callees to walk the "
-    "call graph of a function or method, and class_hierarchy for a class's supertypes and "
-    "subtypes. Paths are repo-relative POSIX (e.g. apps/api/app/db.py); an empty result means "
-    "the path or query isn't in the index."
+    "call graph of a function or method, class_hierarchy for a class's supertypes and "
+    "subtypes, and analyze_symbol_impact for the precise functions/tests a change to one "
+    "symbol would reach. Paths are repo-relative POSIX (e.g. apps/api/app/db.py); an empty "
+    "result means the path or query isn't in the index."
 )
 
 
@@ -34,6 +35,7 @@ def build_server(repo_root: Path | None = None) -> FastMCP:
     from topolox.query.calls import CallGraphService
     from topolox.query.dependencies import DependencyService
     from topolox.query.hierarchy import HierarchyService
+    from topolox.query.impact import SymbolImpactService
     from topolox.query.outline import OutlineService
     from topolox.query.overview import OverviewService
     from topolox.query.pruner import ContextPruner
@@ -57,6 +59,7 @@ def build_server(repo_root: Path | None = None) -> FastMCP:
         overview=OverviewService(graph),
         calls=CallGraphService(graph),
         hierarchy=HierarchyService(graph),
+        impact=SymbolImpactService(graph),
     )
     server = FastMCP("Topolox", instructions=_INSTRUCTIONS)
     register_tools(server, context)

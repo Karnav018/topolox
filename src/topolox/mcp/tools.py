@@ -17,6 +17,7 @@ from topolox.models.query import (
     FileOutline,
     PrunedContext,
     RepoOverview,
+    SymbolImpact,
     SymbolSource,
 )
 
@@ -85,6 +86,15 @@ def register_tools(server: FastMCP, ctx: AppContext) -> None:
         Use to find overrides and the type's place in the hierarchy."""
         return await asyncio.to_thread(ctx.hierarchy.of_class, name, path=path)
 
+    async def analyze_symbol_impact(
+        name: str, path: str | None = None, max_depth: int = 4
+    ) -> SymbolImpact:
+        """Symbol-level blast radius: the functions/methods that transitively call ``name``
+        (and classes that subclass it), plus the files and tests they live in. More precise
+        than analyze_blast_radius (which is file-level) — use it to scope a change and find
+        exactly which tests to run. (Resolved Python call graph.)"""
+        return await asyncio.to_thread(ctx.impact.analyze, name, path=path, max_depth=max_depth)
+
     for tool in (
         get_file_dependencies,
         analyze_blast_radius,
@@ -96,5 +106,6 @@ def register_tools(server: FastMCP, ctx: AppContext) -> None:
         get_callers,
         get_callees,
         class_hierarchy,
+        analyze_symbol_impact,
     ):
         server.tool(tool)

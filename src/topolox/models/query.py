@@ -127,3 +127,14 @@ class ClassHierarchy(BaseModel):
     matched: list[str] = Field(default_factory=list)
     supertypes: list[SymbolRef] = Field(default_factory=list)
     subtypes: list[SymbolRef] = Field(default_factory=list)
+
+
+class SymbolImpact(BaseModel):
+    """Symbol-level downstream impact: what transitively calls (or subclasses) a symbol."""
+
+    symbol: str
+    matched: list[str] = Field(default_factory=list)
+    impacted_symbols: list[SymbolRef] = Field(default_factory=list)
+    impacted_files: list[str] = Field(default_factory=list)
+    impacted_tests: list[str] = Field(default_factory=list)
+    max_depth: int = 0
