@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **`class_hierarchy(name, path)`** / `topolox hierarchy` — a class's direct supertypes and subtypes.
   - The extractor now emits `CALLS` and `INHERITS` edges (Python), and the indexer resolves them to concrete symbols (same-file first, then a unique repo-wide match; Python builtins skipped). Resolution is best-effort and deterministic — ambiguous or external targets are omitted rather than guessed. `repo_overview`'s symbol count now excludes unresolved bare-name placeholders.
 - **`analyze_symbol_impact(name, path, max_depth)`** / `topolox impact` — symbol-level blast radius (the eleventh tool). Walks the resolved call graph for the functions/methods that *transitively call* a symbol (and the classes that subclass it), then reports the impacted symbols, files, and **test files** — the symbol-precise complement to the file-level `analyze_blast_radius`, so an agent can scope a change and run only the tests it can reach.
+- **Call graph extended to JavaScript, TypeScript, and TSX.** `CALLS` (`call_expression` / `new_expression`) and `INHERITS` (`extends` and `implements`) edges are now extracted for JS/TS/TSX, so `get_callers`/`get_callees`, `class_hierarchy`, and `analyze_symbol_impact` work across those languages — no tool changes, they light up from the new edges. Calls inside class methods and named function declarations are captured; arrow functions / function expressions assigned to variables are not yet attributed.
 
 ## [0.1.4] - 2026-06-06
 

@@ -62,7 +62,7 @@ Graphify pioneered "drop in a folder, get a knowledge graph." Topolox takes that
 
 ## Supported languages & agents
 
-**Languages** — symbol + import extraction for Python, JavaScript/JSX, TypeScript/TSX, Go, Rust, Java, C, C++, C#, Ruby, PHP, Kotlin, Swift, and Scala; any other [tree-sitter-language-pack](https://github.com/Goldziher/tree-sitter-language-pack) grammar (300+) is still parsed and indexed at the file level.
+**Languages** — symbol + import extraction for Python, JavaScript/JSX, TypeScript/TSX, Go, Rust, Java, C, C++, C#, Ruby, PHP, Kotlin, Swift, and Scala; any other [tree-sitter-language-pack](https://github.com/Goldziher/tree-sitter-language-pack) grammar (300+) is still parsed and indexed at the file level. The **call graph** (`get_callers`/`get_callees`, `class_hierarchy`, `analyze_symbol_impact`) currently covers **Python, JavaScript, TypeScript, and TSX**.
 
 **Agents** — `topolox mcp install` registers the MCP server with **Claude Code, Cursor, OpenAI Codex CLI, Gemini CLI, VS Code, Windsurf, and Claude Desktop** (and any other MCP client — it's a standard stdio MCP server).
 
@@ -82,7 +82,7 @@ Graphify pioneered "drop in a folder, get a knowledge graph." Topolox takes that
 | `class_hierarchy(name, path)` | a class's direct supertypes and subtypes (what it extends, what extends it) |
 | `analyze_symbol_impact(name, path, max_depth)` | symbol-level blast radius — the exact functions/tests that transitively reach a symbol |
 
-Nudge the agent with *"Using topolox, …"* so it reaches for these instead of grepping. `deps`, `blast`, `outline`, `overview`, and the call-graph/hierarchy tools are graph-based and most reliable; `search`/`prune` ranking improves with the `[embeddings]` extra. The natural loop: `search`/`prune` or `outline` to find the symbol, then `read_symbol` to pull only its source. The call-graph tools (`get_callers`/`get_callees`, `class_hierarchy`, `analyze_symbol_impact`) run on a resolved Python call graph — links are best-effort (same-file first, then a unique repo-wide match), so ambiguous or external calls are omitted rather than guessed. `analyze_symbol_impact` is the symbol-precise complement to the file-level `analyze_blast_radius`: it walks transitive callers (and subclasses) and flags which impacted files are tests, so an agent runs just the tests a change can reach.
+Nudge the agent with *"Using topolox, …"* so it reaches for these instead of grepping. `deps`, `blast`, `outline`, `overview`, and the call-graph/hierarchy tools are graph-based and most reliable; `search`/`prune` ranking improves with the `[embeddings]` extra. The natural loop: `search`/`prune` or `outline` to find the symbol, then `read_symbol` to pull only its source. The call-graph tools (`get_callers`/`get_callees`, `class_hierarchy`, `analyze_symbol_impact`) run on a resolved call graph for Python, JavaScript, TypeScript, and TSX — links are best-effort (same-file first, then a unique repo-wide match), so ambiguous or external calls are omitted rather than guessed. Calls inside class methods and named function declarations are captured; calls inside arrow functions / function expressions assigned to variables are not yet attributed. `analyze_symbol_impact` is the symbol-precise complement to the file-level `analyze_blast_radius`: it walks transitive callers (and subclasses) and flags which impacted files are tests, so an agent runs just the tests a change can reach.
 
 ## CLI
 

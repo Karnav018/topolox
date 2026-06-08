@@ -195,24 +195,54 @@ _PY_BUILTINS = frozenset(
 )
 
 
+_LEAF_NAME_TYPES = frozenset(
+    {"identifier", "type_identifier", "property_identifier", "field_identifier"}
+)
+
+# Class-heritage containers across languages (Python uses the `superclasses` field instead).
+_HERITAGE_TYPES = frozenset(
+    {"class_heritage", "extends_clause", "implements_clause", "extends_type_clause"}
+)
+_HERITAGE_SKIP = frozenset({"type_arguments", "type_parameters"})
+
+
 def _call_target(node: Node, source: bytes) -> str | None:
-    """Return the simple name of a call's callee (``foo`` from ``foo()``/``obj.foo()``)."""
-    fn = node.child_by_field_name("function")
-    if fn is None:
+    """Return the simple name of a call's callee.
+
+    Covers ``foo()`` / ``obj.foo()`` (Python ``call``, JS/TS ``call_expression``) and
+    ``new Foo()`` (JS/TS ``new_expression``) — the rightmost name is what we link on.
+    """
+    callee = node.child_by_field_name("function") or node.child_by_field_name("constructor")
+    if callee is None:
         return None
-    if fn.type in ("identifier", "type_identifier"):
-        return _text(fn, source)
-    if fn.type == "attribute":
-        attr = fn.child_by_field_name("attribute")
-        if attr is not None:
-            return _text(attr, source)
+    if callee.type in _LEAF_NAME_TYPES:
+        return _text(callee, source)
+    if callee.type == "attribute":  # Python: obj.method
+        attr = callee.child_by_field_name("attribute")
+        return _text(attr, source) if attr is not None else None
+    if callee.type == "member_expression":  # JS/TS: obj.method
+        prop = callee.child_by_field_name("property")
+        return _text(prop, source) if prop is not None else None
     return None
 
 
-def _base_classes(node: Node, source: bytes, language: str) -> list[str]:
-    """Return the names of a Python class's base classes, if any."""
-    if language != "python":
-        return []
+def _heritage_names(node: Node, source: bytes) -> list[str]:
+    """Collect type names in a JS/TS class-heritage subtree, recursing only through the
+    ``extends``/``implements`` wrappers (never into generics or arbitrary nodes)."""
+    names: list[str] = []
+    for child in node.named_children:
+        if child.type in ("identifier", "type_identifier"):
+            names.append(_text(child, source))
+        elif child.type == "member_expression":
+            prop = child.child_by_field_name("property")
+            if prop is not None:
+                names.append(_text(prop, source))
+        elif child.type in _HERITAGE_TYPES and child.type not in _HERITAGE_SKIP:
+            names.extend(_heritage_names(child, source))
+    return names
+
+
+def _python_bases(node: Node, source: bytes) -> list[str]:
     supers = node.child_by_field_name("superclasses")
     if supers is None:
         return []
@@ -220,11 +250,24 @@ def _base_classes(node: Node, source: bytes, language: str) -> list[str]:
     for child in supers.named_children:
         if child.type in ("identifier", "type_identifier"):
             bases.append(_text(child, source))
-        elif child.type == "attribute":
+        elif child.type == "attribute":  # dotted base, e.g. abc.ABC
             attr = child.child_by_field_name("attribute")
             if attr is not None:
                 bases.append(_text(attr, source))
     return bases
+
+
+def _base_classes(node: Node, source: bytes, language: str) -> list[str]:
+    """Return the names of a class's base classes / implemented interfaces, if any."""
+    if language == "python":
+        return _python_bases(node, source)
+    if language in ("javascript", "typescript", "tsx"):
+        bases: list[str] = []
+        for child in node.named_children:
+            if child.type in _HERITAGE_TYPES:
+                bases.extend(_heritage_names(child, source))
+        return bases
+    return []
 
 
 def _import_target(node: Node, source: bytes) -> str | None:
