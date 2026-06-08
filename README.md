@@ -37,7 +37,7 @@ Graphify pioneered "drop in a folder, get a knowledge graph." Topolox takes that
 | **Storage** | Static `graph.json` + in-memory NetworkX | Embedded **Kùzu** (graph) + **LanceDB** (vectors), on disk |
 | **Retrieval** | Lexical substring + IDF + BFS/DFS traversal | **Vector** semantic search + graph traversal (hybrid) |
 | **Live updates** | Opt-in `--watch` / git hook / manual `--update` | **watchdog daemon**, ms-level incremental patches |
-| **Agent access** | Optional MCP (7 read-only tools) + Markdown reports | **MCP-native** (10 tools), `mcp install` for every agent |
+| **Agent access** | Optional MCP (7 read-only tools) + Markdown reports | **MCP-native** (11 tools), `mcp install` for every agent |
 | **Inputs** | Code **+ docs + papers + images + video** | Code — 14 languages richly, 300+ at the file level |
 | **Signature features** | Community detection, "god nodes", multi-modal RAG | Blast radius, dependency maps, context pruner, resolved call graph |
 | **Concurrency** | Single graph, in-memory | Multiprocessing + asyncio, embedded DBs |
@@ -80,8 +80,9 @@ Graphify pioneered "drop in a folder, get a knowledge graph." Topolox takes that
 | `get_callers(name, path)` | functions/methods that call a symbol — precise "what breaks if I change this?" |
 | `get_callees(name, path)` | what a function calls — trace how it works without reading it |
 | `class_hierarchy(name, path)` | a class's direct supertypes and subtypes (what it extends, what extends it) |
+| `analyze_symbol_impact(name, path, max_depth)` | symbol-level blast radius — the exact functions/tests that transitively reach a symbol |
 
-Nudge the agent with *"Using topolox, …"* so it reaches for these instead of grepping. `deps`, `blast`, `outline`, `overview`, and the call-graph/hierarchy tools are graph-based and most reliable; `search`/`prune` ranking improves with the `[embeddings]` extra. The natural loop: `search`/`prune` or `outline` to find the symbol, then `read_symbol` to pull only its source. The call graph (`get_callers`/`get_callees`, `class_hierarchy`) is a resolved Python call graph — links are best-effort (same-file first, then a unique repo-wide match), so ambiguous or external calls are omitted rather than guessed.
+Nudge the agent with *"Using topolox, …"* so it reaches for these instead of grepping. `deps`, `blast`, `outline`, `overview`, and the call-graph/hierarchy tools are graph-based and most reliable; `search`/`prune` ranking improves with the `[embeddings]` extra. The natural loop: `search`/`prune` or `outline` to find the symbol, then `read_symbol` to pull only its source. The call-graph tools (`get_callers`/`get_callees`, `class_hierarchy`, `analyze_symbol_impact`) run on a resolved Python call graph — links are best-effort (same-file first, then a unique repo-wide match), so ambiguous or external calls are omitted rather than guessed. `analyze_symbol_impact` is the symbol-precise complement to the file-level `analyze_blast_radius`: it walks transitive callers (and subclasses) and flags which impacted files are tests, so an agent runs just the tests a change can reach.
 
 ## CLI
 
@@ -97,6 +98,7 @@ topolox overview                # repo size, languages, and hub files
 topolox callers  <symbol>       # functions/methods that call a symbol
 topolox callees  <symbol>       # what a symbol calls
 topolox hierarchy <class>       # a class's supertypes and subtypes
+topolox impact   <symbol>       # symbol-level blast radius (callers/subclasses + tests)
 topolox mcp install [--client claude-code|cursor|codex|gemini|vscode|windsurf|claude-desktop|all]
 topolox mcp serve               # run the MCP server over stdio (agents usually spawn this)
 ```

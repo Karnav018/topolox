@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from topolox.query.calls import CallGraphService
     from topolox.query.dependencies import DependencyService
     from topolox.query.hierarchy import HierarchyService
+    from topolox.query.impact import SymbolImpactService
     from topolox.query.outline import OutlineService
     from topolox.query.overview import OverviewService
     from topolox.query.pruner import ContextPruner
@@ -34,3 +35,4 @@ class AppContext:
     overview: OverviewService
     calls: CallGraphService
     hierarchy: HierarchyService
+    impact: SymbolImpactService
