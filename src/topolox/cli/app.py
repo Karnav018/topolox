@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import typer
 
 from topolox import __version__
+
+if TYPE_CHECKING:
+    from topolox.models.query import SymbolRef
 
 app = typer.Typer(
     name="topolox",
@@ -352,6 +355,71 @@ def overview() -> None:
         typer.echo(f"  {hub.dependents:>4}  {hub.path}")
     if not report.hubs:
         typer.echo("  (none resolved)")
+
+
+def _echo_refs(refs: list[SymbolRef]) -> None:
+    if not refs:
+        typer.echo("    (none)")
+        return
+    for ref in refs:
+        typer.echo(f"    {ref.path}:{ref.start_line:<4} {ref.kind:<8} {ref.qualified_name}")
+
+
+@app.command()
+def callers(
+    name: Annotated[str, typer.Argument(help="Function/method/class name.")],
+    path: Annotated[str | None, typer.Option(help="Restrict the lookup to this file.")] = None,
+) -> None:
+    """Show functions/methods that call a symbol."""
+    from topolox.graph.kuzu_store import KuzuGraphStore
+    from topolox.query.calls import CallGraphService
+
+    graph = KuzuGraphStore(_require_index(), read_only=True)
+    try:
+        report = CallGraphService(graph).callers(name, path=path)
+    finally:
+        graph.close()
+    typer.echo(f"Callers of {name} (matched: {', '.join(report.matched) or 'none'}):")
+    _echo_refs(report.neighbors)
+
+
+@app.command()
+def callees(
+    name: Annotated[str, typer.Argument(help="Function/method/class name.")],
+    path: Annotated[str | None, typer.Option(help="Restrict the lookup to this file.")] = None,
+) -> None:
+    """Show what a symbol calls."""
+    from topolox.graph.kuzu_store import KuzuGraphStore
+    from topolox.query.calls import CallGraphService
+
+    graph = KuzuGraphStore(_require_index(), read_only=True)
+    try:
+        report = CallGraphService(graph).callees(name, path=path)
+    finally:
+        graph.close()
+    typer.echo(f"{name} calls (matched: {', '.join(report.matched) or 'none'}):")
+    _echo_refs(report.neighbors)
+
+
+@app.command()
+def hierarchy(
+    name: Annotated[str, typer.Argument(help="Class name.")],
+    path: Annotated[str | None, typer.Option(help="Restrict the lookup to this file.")] = None,
+) -> None:
+    """Show a class's direct supertypes and subtypes."""
+    from topolox.graph.kuzu_store import KuzuGraphStore
+    from topolox.query.hierarchy import HierarchyService
+
+    graph = KuzuGraphStore(_require_index(), read_only=True)
+    try:
+        report = HierarchyService(graph).of_class(name, path=path)
+    finally:
+        graph.close()
+    typer.echo(f"{name} (matched: {', '.join(report.matched) or 'none'})")
+    typer.echo("  supertypes:")
+    _echo_refs(report.supertypes)
+    typer.echo("  subtypes:")
+    _echo_refs(report.subtypes)
 
 
 @app.command()

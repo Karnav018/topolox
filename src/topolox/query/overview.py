@@ -14,7 +14,12 @@ if TYPE_CHECKING:
 
 _FILE_COUNT = "MATCH (s:Symbol {kind: 'file'}) RETURN count(s) AS n"
 
-_SYMBOL_COUNT = "MATCH (s:Symbol) WHERE s.kind <> 'file' RETURN count(s) AS n"
+# Exclude file nodes and bare-name placeholders (unresolved imports/calls/bases),
+# which carry no path — count only real extracted symbols.
+_SYMBOL_COUNT = (
+    "MATCH (s:Symbol) WHERE s.kind <> 'file' AND s.path IS NOT NULL AND s.path <> '' "
+    "RETURN count(s) AS n"
+)
 
 _LANGUAGES = (
     "MATCH (s:Symbol {kind: 'file'}) WHERE s.language <> '' "

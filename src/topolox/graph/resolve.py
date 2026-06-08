@@ -28,6 +28,90 @@ _LINK = (
     "MATCH (a:Symbol {id: $src}), (b:Symbol {id: $dst}) MERGE (a)-[r:Rel {kind: 'imports'}]->(b)"
 )
 
+# Name-based CALLS / INHERITS edges point at bare-name placeholders (path = '');
+# these passes link them to the real symbol they name, preferring a same-file
+# definition and otherwise a unique repo-wide match. Ambiguous names are left
+# unresolved rather than mislinked.
+_CLASSES = (
+    "MATCH (s:Symbol {kind: 'class'}) WHERE s.path <> '' "
+    "RETURN s.id AS id, s.name AS name, s.path AS path"
+)
+
+_CALL_TARGETS = (
+    "MATCH (s:Symbol) WHERE s.path <> '' AND s.kind IN ['function', 'method', 'class'] "
+    "RETURN s.id AS id, s.name AS name, s.path AS path"
+)
+
+_INHERIT_EDGES = (
+    "MATCH (a:Symbol)-[r:Rel {kind: 'inherits'}]->(t) WHERE t.path IS NULL OR t.path = '' "
+    "RETURN DISTINCT a.id AS src, a.path AS src_path, t.id AS name"
+)
+
+_CALL_EDGES = (
+    "MATCH (a:Symbol)-[r:Rel {kind: 'calls'}]->(t) WHERE t.path IS NULL OR t.path = '' "
+    "RETURN DISTINCT a.id AS src, a.path AS src_path, t.id AS name"
+)
+
+_LINK_INHERITS = (
+    "MATCH (a:Symbol {id: $src}), (b:Symbol {id: $dst}) MERGE (a)-[r:Rel {kind: 'inherits'}]->(b)"
+)
+
+_LINK_CALLS = (
+    "MATCH (a:Symbol {id: $src}), (b:Symbol {id: $dst}) MERGE (a)-[r:Rel {kind: 'calls'}]->(b)"
+)
+
+
+def _index_by_name(rows: list[dict[str, object]]) -> dict[str, list[tuple[str, str]]]:
+    by_name: dict[str, list[tuple[str, str]]] = {}
+    for row in rows:
+        by_name.setdefault(str(row["name"]), []).append((str(row["id"]), str(row["path"])))
+    return by_name
+
+
+def _pick(
+    candidates: list[tuple[str, str]],
+    src_path: str,
+    src_id: str,
+    *,
+    exclude_self: bool,
+) -> str | None:
+    """Choose the best symbol id for a name: same-file first, then unique global."""
+    cands = [(cid, cpath) for cid, cpath in candidates if not (exclude_self and cid == src_id)]
+    if not cands:
+        return None
+    same = [cid for cid, cpath in cands if cpath == src_path]
+    if len(same) == 1:
+        return same[0]
+    if same:
+        return None  # ambiguous within the file
+    return cands[0][0] if len(cands) == 1 else None
+
+
+def resolve_inheritance(store: GraphStore) -> int:
+    """Link ``inherits`` edges from a class to the base class it names; return the count."""
+    by_name = _index_by_name(store.query(_CLASSES))
+    resolved = 0
+    for row in store.query(_INHERIT_EDGES):
+        src, src_path, name = str(row["src"]), str(row["src_path"]), str(row["name"])
+        dest = _pick(by_name.get(name, []), src_path, src, exclude_self=True)
+        if dest is not None:
+            store.query(_LINK_INHERITS, {"src": src, "dst": dest})
+            resolved += 1
+    return resolved
+
+
+def resolve_calls(store: GraphStore) -> int:
+    """Link ``calls`` edges to the function/method/class they name; return the count."""
+    by_name = _index_by_name(store.query(_CALL_TARGETS))
+    resolved = 0
+    for row in store.query(_CALL_EDGES):
+        src, src_path, name = str(row["src"]), str(row["src_path"]), str(row["name"])
+        dest = _pick(by_name.get(name, []), src_path, src, exclude_self=False)
+        if dest is not None:
+            store.query(_LINK_CALLS, {"src": src, "dst": dest})
+            resolved += 1
+    return resolved
+
 
 def resolve_imports(store: GraphStore) -> int:
     """Add ``imports`` edges from importers to resolved file nodes; return the count."""

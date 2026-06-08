@@ -9,7 +9,9 @@ if TYPE_CHECKING:
     from topolox.config import Settings
     from topolox.graph.store import GraphStore
     from topolox.query.blast_radius import BlastRadiusService
+    from topolox.query.calls import CallGraphService
     from topolox.query.dependencies import DependencyService
+    from topolox.query.hierarchy import HierarchyService
     from topolox.query.outline import OutlineService
     from topolox.query.overview import OverviewService
     from topolox.query.pruner import ContextPruner
@@ -30,3 +32,5 @@ class AppContext:
     reader: SymbolReader
     outline: OutlineService
     overview: OverviewService
+    calls: CallGraphService
+    hierarchy: HierarchyService

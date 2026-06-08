@@ -98,3 +98,32 @@ class RepoOverview(BaseModel):
     symbols: int = 0
     languages: dict[str, int] = Field(default_factory=dict)
     hubs: list[HubFile] = Field(default_factory=list)
+
+
+class SymbolRef(BaseModel):
+    """A lightweight reference to a symbol on the other end of an edge."""
+
+    id: str
+    name: str
+    qualified_name: str
+    kind: str
+    path: str
+    start_line: int = 0
+
+
+class CallReport(BaseModel):
+    """The callers or callees of a symbol (resolved call graph)."""
+
+    symbol: str
+    direction: str  # "callers" | "callees"
+    matched: list[str] = Field(default_factory=list)  # qualified names the query resolved to
+    neighbors: list[SymbolRef] = Field(default_factory=list)
+
+
+class ClassHierarchy(BaseModel):
+    """The direct supertypes and subtypes of a class."""
+
+    symbol: str
+    matched: list[str] = Field(default_factory=list)
+    supertypes: list[SymbolRef] = Field(default_factory=list)
+    subtypes: list[SymbolRef] = Field(default_factory=list)

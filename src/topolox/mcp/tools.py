@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING
 
 from topolox.models.query import (
     BlastRadiusReport,
+    CallReport,
+    ClassHierarchy,
     DependencyMap,
     FileOutline,
     PrunedContext,
@@ -67,6 +69,22 @@ def register_tools(server: FastMCP, ctx: AppContext) -> None:
         files most other files import (the high-impact places to start)."""
         return await asyncio.to_thread(ctx.overview.summary)
 
+    async def get_callers(name: str, path: str | None = None) -> CallReport:
+        """Functions/methods that call ``name`` — the call graph upstream. More precise
+        than file imports for "what breaks if I change this?". Pass ``path`` to
+        disambiguate a name that exists in several files. (Resolved Python call graph.)"""
+        return await asyncio.to_thread(ctx.calls.callers, name, path=path)
+
+    async def get_callees(name: str, path: str | None = None) -> CallReport:
+        """What ``name`` calls — the functions/methods/classes it invokes. Use to trace
+        how a function works without reading it."""
+        return await asyncio.to_thread(ctx.calls.callees, name, path=path)
+
+    async def class_hierarchy(name: str, path: str | None = None) -> ClassHierarchy:
+        """A class's direct supertypes and subtypes — what it extends and what extends it.
+        Use to find overrides and the type's place in the hierarchy."""
+        return await asyncio.to_thread(ctx.hierarchy.of_class, name, path=path)
+
     for tool in (
         get_file_dependencies,
         analyze_blast_radius,
@@ -75,5 +93,8 @@ def register_tools(server: FastMCP, ctx: AppContext) -> None:
         read_symbol,
         file_outline,
         repo_overview,
+        get_callers,
+        get_callees,
+        class_hierarchy,
     ):
         server.tool(tool)
