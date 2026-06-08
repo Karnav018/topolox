@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-06-08
+
+### Added
+- **`topolox index` now shows a live progress bar** (file count, elapsed time, and a parse → finalize phase label) on an interactive terminal, so a multi-second index isn't a silent wait. Falls back to a plain message when output isn't a TTY (pipes, CI).
+
+### Fixed
+- **`topolox index` no longer crashes on an index built by an older version.** A graph whose `Symbol` table predates the `docstring` column (i.e. one built by Topolox ≤ 0.2.0) failed with `Binder exception: Cannot find property docstring for s`. `init_schema` now migrates such tables in place (`ALTER TABLE … ADD`), so upgrading and re-indexing just works (no need to delete `.topolox/`).
+
 ## [0.2.0] - 2026-06-08
 
 ### Added
@@ -26,10 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Import-aware call/inheritance resolution.** When a called (or extended) name is defined in several files, resolution now prefers the definition the caller's file actually imports — before falling back to a unique repo-wide match. This correctly links common names like `build()` / `run()` / `query()` across files instead of dropping them: on this repo, ~12% of resolved internal call edges (64 of 535) are cross-file calls to a globally-ambiguous name that only import-aware resolution can place.
 - **Call graph extended to Go, Rust, and Java.** `CALLS` edges are now extracted for Go (`call_expression`, incl. `obj.Method()` selectors), Rust (`call_expression`, incl. `self.method()` field calls and `mod::func()` paths), and Java (`method_invocation` and `new X()` `object_creation_expression`); Java also gets `INHERITS` from `extends` and `implements`. The call graph now spans seven languages (Python, JS, TS, TSX, Go, Rust, Java) — `get_callers`/`get_callees`, `class_hierarchy`, and `analyze_symbol_impact` all light up from the new edges, no tool changes.
 
-- **`topolox index` now shows a live progress bar** (file count, elapsed time, and a parse → finalize phase label) on an interactive terminal, so a multi-second index isn't a silent wait. Falls back to a plain message when output isn't a TTY (pipes, CI).
-
 ### Fixed
-- **`topolox index` no longer crashes on an index built by an older version.** A graph whose `Symbol` table predates the `docstring` column failed with `Binder exception: Cannot find property docstring for s`. `init_schema` now migrates such tables in place (`ALTER TABLE … ADD`), so upgrading and re-indexing just works (no need to delete `.topolox/`).
 - **Source distribution is no longer bloated.** The sdist had no file scoping, so hatchling bundled the entire tree — the Astro `site/` and the `video/` promo project, ~340 MB — which would be rejected by PyPI. The sdist now ships only the package, tests, and docs (~54 KB).
 
 ## [0.1.4] - 2026-06-06
