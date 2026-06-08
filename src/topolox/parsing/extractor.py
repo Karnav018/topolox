@@ -199,6 +199,9 @@ _LEAF_NAME_TYPES = frozenset(
     {"identifier", "type_identifier", "property_identifier", "field_identifier"}
 )
 
+# JS/TS function values bound to a name (const f = () => …, handler = function(){}).
+_FUNCTION_EXPRS = frozenset({"arrow_function", "function_expression"})
+
 # Class-heritage containers across languages (Python uses the `superclasses` field instead).
 _HERITAGE_TYPES = frozenset(
     {"class_heritage", "extends_clause", "implements_clause", "extends_type_clause"}
@@ -362,6 +365,35 @@ class SymbolExtractor:
                     )
                     edges.append(Edge(src_id=parent_id, dst_id=sid, kind=EdgeKind.DEFINES))
                     visit(child, sid, qual, NodeKind.FUNCTION)
+                elif ctype in spec.func_bindings:
+                    value = child.child_by_field_name("value")
+                    name_node = child.child_by_field_name("name")
+                    if (
+                        value is not None
+                        and value.type in _FUNCTION_EXPRS
+                        and name_node is not None
+                        and name_node.type in ("identifier", "property_identifier")
+                    ):
+                        name = _text(name_node, source)
+                        qual = f"{parent_qual}.{name}" if parent_qual else name
+                        sid = f"{path}::{qual}"
+                        kind = NodeKind.METHOD if container == NodeKind.CLASS else NodeKind.FUNCTION
+                        nodes.append(
+                            SymbolNode(
+                                id=sid,
+                                kind=kind,
+                                name=name,
+                                qualified_name=qual,
+                                path=path,
+                                language=language,
+                                span=_span(child),
+                                signature=_signature(value, name, source),
+                            )
+                        )
+                        edges.append(Edge(src_id=parent_id, dst_id=sid, kind=EdgeKind.DEFINES))
+                        visit(value, sid, qual, NodeKind.FUNCTION)
+                    else:
+                        visit(child, parent_id, parent_qual, container)
                 elif ctype in spec.imports:
                     target = _import_target(child, source)
                     if target:
