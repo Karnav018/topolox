@@ -92,16 +92,19 @@ LANGUAGE_SPECS: dict[str, LangSpec] = {
         ["function_declaration", "method_definition", "generator_function_declaration"],
         ["class_declaration"],
         ["import_statement"],
+        calls=["call_expression", "new_expression"],
     ),
     "typescript": _spec(
         ["function_declaration", "method_definition", "function_signature"],
         ["class_declaration", "interface_declaration", "enum_declaration"],
         ["import_statement"],
+        calls=["call_expression", "new_expression"],
     ),
     "tsx": _spec(
         ["function_declaration", "method_definition"],
         ["class_declaration", "interface_declaration", "enum_declaration"],
         ["import_statement"],
+        calls=["call_expression", "new_expression"],
     ),
     "go": _spec(
         ["function_declaration", "method_declaration"],

@@ -98,3 +98,46 @@ def test_extracts_calls_and_inheritance() -> None:
     assert ("m.py::m.Base.run", "helper") in calls
     # builtins (len) are not recorded as calls
     assert all(dst != "len" for _, dst in calls)
+
+
+JS_SOURCE = b"""
+class Animal {
+  speak() { return this.noise(); }
+}
+class Dog extends Animal {
+  bark() { return woof(); }
+}
+function woof() { return helper(); }
+"""
+
+
+def test_extracts_calls_and_inheritance_javascript() -> None:
+    result = SymbolExtractor("javascript").extract("zoo.js", JS_SOURCE)
+    inherits = {(e.src_id, e.dst_id) for e in result.edges if e.kind == EdgeKind.INHERITS}
+    calls = {(e.src_id, e.dst_id) for e in result.edges if e.kind == EdgeKind.CALLS}
+
+    assert ("zoo.js::zoo.Dog", "Animal") in inherits
+    assert ("zoo.js::zoo.Dog.bark", "woof") in calls
+    assert ("zoo.js::zoo.Animal.speak", "noise") in calls  # this.noise() -> noise
+
+
+TS_SOURCE = b"""
+class Base {}
+interface Named { name: string; }
+class Svc extends Base implements Named {
+  run(): void { doThing(); new Helper(); }
+}
+class Helper {}
+"""
+
+
+def test_extracts_calls_and_inheritance_typescript() -> None:
+    result = SymbolExtractor("typescript").extract("svc.ts", TS_SOURCE)
+    inherits = {(e.src_id, e.dst_id) for e in result.edges if e.kind == EdgeKind.INHERITS}
+    calls = {(e.src_id, e.dst_id) for e in result.edges if e.kind == EdgeKind.CALLS}
+
+    # both `extends` and `implements` become inheritance edges
+    assert ("svc.ts::svc.Svc", "Base") in inherits
+    assert ("svc.ts::svc.Svc", "Named") in inherits
+    assert ("svc.ts::svc.Svc.run", "doThing") in calls
+    assert ("svc.ts::svc.Svc.run", "Helper") in calls  # new Helper()
