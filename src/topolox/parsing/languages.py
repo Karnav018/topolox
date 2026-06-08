@@ -116,17 +116,20 @@ LANGUAGE_SPECS: dict[str, LangSpec] = {
         ["function_declaration", "method_declaration"],
         ["type_declaration"],
         ["import_declaration"],
+        calls=["call_expression"],
     ),
     "rust": _spec(
         ["function_item"],
         ["struct_item", "enum_item", "trait_item"],
         ["use_declaration"],
         containers=["impl_item", "mod_item"],
+        calls=["call_expression"],
     ),
     "java": _spec(
         ["method_declaration", "constructor_declaration"],
         ["class_declaration", "interface_declaration", "enum_declaration", "record_declaration"],
         ["import_declaration"],
+        calls=["method_invocation", "object_creation_expression"],
     ),
     "c": _spec(
         ["function_definition"],

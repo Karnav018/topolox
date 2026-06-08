@@ -209,24 +209,55 @@ _HERITAGE_TYPES = frozenset(
 _HERITAGE_SKIP = frozenset({"type_arguments", "type_parameters"})
 
 
+def _field_text(node: Node, field: str, source: bytes) -> str | None:
+    child = node.child_by_field_name(field)
+    return _text(child, source) if child is not None else None
+
+
+def _callee_name(callee: Node, source: bytes) -> str | None:
+    """The rightmost name of a callee expression, across language grammars."""
+    t = callee.type
+    if t in _LEAF_NAME_TYPES:
+        return _text(callee, source)
+    if t == "attribute":  # Python: obj.method
+        return _field_text(callee, "attribute", source)
+    if t == "member_expression":  # JS/TS: obj.method
+        return _field_text(callee, "property", source)
+    if t in ("selector_expression", "field_expression"):  # Go / Rust: obj.method
+        return _field_text(callee, "field", source)
+    if t in ("scoped_identifier", "scoped_type_identifier"):  # Rust: mod::func
+        name = callee.child_by_field_name("name")
+        return _text(name, source) if name is not None else None
+    return None
+
+
+def _new_type_name(node: Node, source: bytes) -> str | None:
+    """The class name of a Java ``new X()`` type (handles generics/scoped types)."""
+    if node.type == "type_identifier":
+        return _text(node, source)
+    for child in node.named_children:
+        if child.type == "type_identifier":
+            return _text(child, source)
+    for child in node.named_children:
+        if child.type in ("generic_type", "scoped_type_identifier"):
+            return _new_type_name(child, source)
+    return None
+
+
 def _call_target(node: Node, source: bytes) -> str | None:
     """Return the simple name of a call's callee.
 
-    Covers ``foo()`` / ``obj.foo()`` (Python ``call``, JS/TS ``call_expression``) and
-    ``new Foo()`` (JS/TS ``new_expression``) — the rightmost name is what we link on.
+    Covers ``foo()`` / ``obj.foo()`` (Python ``call``, JS/TS/Go/Rust ``call_expression``),
+    ``new Foo()`` (JS/TS ``new_expression``, Java ``object_creation_expression``), and
+    Java ``method_invocation`` — the rightmost name is what we link on.
     """
+    if node.type == "method_invocation":  # Java
+        return _field_text(node, "name", source)
+    if node.type == "object_creation_expression":  # Java: new X()
+        typ = node.child_by_field_name("type")
+        return _new_type_name(typ, source) if typ is not None else None
     callee = node.child_by_field_name("function") or node.child_by_field_name("constructor")
-    if callee is None:
-        return None
-    if callee.type in _LEAF_NAME_TYPES:
-        return _text(callee, source)
-    if callee.type == "attribute":  # Python: obj.method
-        attr = callee.child_by_field_name("attribute")
-        return _text(attr, source) if attr is not None else None
-    if callee.type == "member_expression":  # JS/TS: obj.method
-        prop = callee.child_by_field_name("property")
-        return _text(prop, source) if prop is not None else None
-    return None
+    return _callee_name(callee, source) if callee is not None else None
 
 
 def _heritage_names(node: Node, source: bytes) -> list[str]:
@@ -260,6 +291,19 @@ def _python_bases(node: Node, source: bytes) -> list[str]:
     return bases
 
 
+def _type_idents(node: Node, source: bytes) -> list[str]:
+    """All ``type_identifier`` names in a subtree, skipping generic argument lists."""
+    names: list[str] = []
+    queue: deque[Node] = deque([node])
+    while queue:
+        current = queue.popleft()
+        if current.type == "type_identifier":
+            names.append(_text(current, source))
+        elif current.type not in _HERITAGE_SKIP:
+            queue.extend(current.named_children)
+    return names
+
+
 def _base_classes(node: Node, source: bytes, language: str) -> list[str]:
     """Return the names of a class's base classes / implemented interfaces, if any."""
     if language == "python":
@@ -269,6 +313,13 @@ def _base_classes(node: Node, source: bytes, language: str) -> list[str]:
         for child in node.named_children:
             if child.type in _HERITAGE_TYPES:
                 bases.extend(_heritage_names(child, source))
+        return bases
+    if language == "java":  # extends <superclass> + implements <interfaces>
+        bases = []
+        for field_name in ("superclass", "interfaces"):
+            clause = node.child_by_field_name(field_name)
+            if clause is not None:
+                bases.extend(_type_idents(clause, source))
         return bases
     return []
 
