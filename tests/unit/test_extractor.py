@@ -172,3 +172,53 @@ def test_extracts_arrow_and_function_expression_bindings() -> None:
     assert ("graph.tsx::graph.Graph", "build") in calls
     assert ("graph.tsx::graph.build", "helper") in calls
     assert ("graph.tsx::graph.C.handler", "run") in calls  # this.run() inside a field arrow
+
+
+def test_extracts_calls_go() -> None:
+    src = b"""package main
+func helper() int { return 1 }
+func run() int { return helper() + obj.Method() }
+"""
+    calls = {
+        (e.src_id, e.dst_id)
+        for e in SymbolExtractor("go").extract("svc.go", src).edges
+        if e.kind == EdgeKind.CALLS
+    }
+    assert ("svc.go::svc.run", "helper") in calls
+    assert ("svc.go::svc.run", "Method") in calls  # selector_expression obj.Method()
+
+
+def test_extracts_calls_rust() -> None:
+    src = b"""fn helper() -> i32 { 1 }
+struct S;
+impl S {
+    fn go(&self) { helper(); self.work(); }
+    fn work(&self) {}
+}
+"""
+    calls = {
+        (e.src_id, e.dst_id)
+        for e in SymbolExtractor("rust").extract("svc.rs", src).edges
+        if e.kind == EdgeKind.CALLS
+    }
+    # impl blocks are containers but don't namespace methods under the struct, so the
+    # method's qualified name is svc.go (an existing extractor behavior).
+    assert ("svc.rs::svc.go", "helper") in calls
+    assert ("svc.rs::svc.go", "work") in calls  # field_expression self.work()
+
+
+def test_extracts_calls_and_inheritance_java() -> None:
+    src = b"""class Base {}
+interface I {}
+class Svc extends Base implements I {
+  void run() { doThing(); new Helper(); }
+}
+"""
+    edges = SymbolExtractor("java").extract("Svc.java", src).edges
+    inherits = {(e.src_id, e.dst_id) for e in edges if e.kind == EdgeKind.INHERITS}
+    calls = {(e.src_id, e.dst_id) for e in edges if e.kind == EdgeKind.CALLS}
+
+    assert ("Svc.java::Svc.Svc", "Base") in inherits  # extends
+    assert ("Svc.java::Svc.Svc", "I") in inherits  # implements
+    assert ("Svc.java::Svc.Svc.run", "doThing") in calls  # method_invocation
+    assert ("Svc.java::Svc.Svc.run", "Helper") in calls  # object_creation_expression
