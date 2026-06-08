@@ -130,6 +130,103 @@ def _docstring(node: Node, source: bytes, language: str) -> str | None:
     return text[: _DOCSTRING_CAP - 1] + "…" if len(text) > _DOCSTRING_CAP else text
 
 
+# Builtins are never internal symbols — skip them so the call graph stays meaningful
+# and the graph isn't flooded with placeholder nodes.
+_PY_BUILTINS = frozenset(
+    {
+        "print",
+        "len",
+        "range",
+        "str",
+        "int",
+        "float",
+        "bool",
+        "list",
+        "dict",
+        "set",
+        "tuple",
+        "isinstance",
+        "issubclass",
+        "getattr",
+        "setattr",
+        "hasattr",
+        "delattr",
+        "super",
+        "type",
+        "enumerate",
+        "zip",
+        "sorted",
+        "reversed",
+        "map",
+        "filter",
+        "open",
+        "repr",
+        "format",
+        "next",
+        "iter",
+        "abs",
+        "min",
+        "max",
+        "sum",
+        "any",
+        "all",
+        "id",
+        "hash",
+        "vars",
+        "dir",
+        "callable",
+        "bytes",
+        "bytearray",
+        "frozenset",
+        "object",
+        "property",
+        "staticmethod",
+        "classmethod",
+        "round",
+        "pow",
+        "divmod",
+        "ord",
+        "chr",
+        "hex",
+        "oct",
+        "bin",
+        "input",
+    }
+)
+
+
+def _call_target(node: Node, source: bytes) -> str | None:
+    """Return the simple name of a call's callee (``foo`` from ``foo()``/``obj.foo()``)."""
+    fn = node.child_by_field_name("function")
+    if fn is None:
+        return None
+    if fn.type in ("identifier", "type_identifier"):
+        return _text(fn, source)
+    if fn.type == "attribute":
+        attr = fn.child_by_field_name("attribute")
+        if attr is not None:
+            return _text(attr, source)
+    return None
+
+
+def _base_classes(node: Node, source: bytes, language: str) -> list[str]:
+    """Return the names of a Python class's base classes, if any."""
+    if language != "python":
+        return []
+    supers = node.child_by_field_name("superclasses")
+    if supers is None:
+        return []
+    bases: list[str] = []
+    for child in supers.named_children:
+        if child.type in ("identifier", "type_identifier"):
+            bases.append(_text(child, source))
+        elif child.type == "attribute":
+            attr = child.child_by_field_name("attribute")
+            if attr is not None:
+                bases.append(_text(attr, source))
+    return bases
+
+
 def _import_target(node: Node, source: bytes) -> str | None:
     for field_name in _IMPORT_FIELDS:
         child = node.child_by_field_name(field_name)
@@ -196,6 +293,8 @@ class SymbolExtractor:
                         )
                     )
                     edges.append(Edge(src_id=parent_id, dst_id=sid, kind=EdgeKind.DEFINES))
+                    for base in _base_classes(child, source, language):
+                        edges.append(Edge(src_id=sid, dst_id=base, kind=EdgeKind.INHERITS))
                     visit(child, sid, qual, NodeKind.CLASS)
                 elif ctype in spec.functions:
                     name = _node_name(child, source)
@@ -224,6 +323,12 @@ class SymbolExtractor:
                     target = _import_target(child, source)
                     if target:
                         edges.append(Edge(src_id=path, dst_id=target, kind=EdgeKind.IMPORTS))
+                elif ctype in spec.calls:
+                    if container == NodeKind.FUNCTION:
+                        callee = _call_target(child, source)
+                        if callee and callee not in _PY_BUILTINS:
+                            edges.append(Edge(src_id=parent_id, dst_id=callee, kind=EdgeKind.CALLS))
+                    visit(child, parent_id, parent_qual, container)  # nested calls in args
                 elif ctype in spec.containers:
                     visit(child, parent_id, parent_qual, NodeKind.CLASS)
                 else:

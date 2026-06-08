@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **`file_outline(path)`** / `topolox outline` — a file's shape (its classes/functions/methods with signatures, docstrings, and line ranges) without reading the file.
   - **`repo_overview()`** / `topolox overview` — orient on an unfamiliar repo: file/symbol counts, language mix, and the hub files most other files import (the high-impact places to start).
 - **Docstrings are now extracted and persisted.** Python module/class/function docstrings flow through to the graph (`Symbol.docstring`) and surface in `file_outline`. Previously the `SymbolNode.docstring` field was dropped — the Kùzu schema had no column for it.
+- **A resolved call graph** — three more MCP tools (and CLI commands), taking the toolset to ten:
+  - **`get_callers(name, path)`** / `topolox callers` — functions/methods that call a symbol. More precise than file-level imports for "what breaks if I change this?".
+  - **`get_callees(name, path)`** / `topolox callees` — what a function calls, to trace how it works without reading it.
+  - **`class_hierarchy(name, path)`** / `topolox hierarchy` — a class's direct supertypes and subtypes.
+  - The extractor now emits `CALLS` and `INHERITS` edges (Python), and the indexer resolves them to concrete symbols (same-file first, then a unique repo-wide match; Python builtins skipped). Resolution is best-effort and deterministic — ambiguous or external targets are omitted rather than guessed. `repo_overview`'s symbol count now excludes unresolved bare-name placeholders.
 
 ## [0.1.4] - 2026-06-06
 

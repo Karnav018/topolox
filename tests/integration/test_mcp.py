@@ -51,6 +51,9 @@ async def test_mcp_server_exposes_and_runs_tools(tmp_path: Path) -> None:
             "read_symbol",
             "file_outline",
             "repo_overview",
+            "get_callers",
+            "get_callees",
+            "class_hierarchy",
         } <= names
 
         deps = await client.call_tool("get_file_dependencies", {"path": "app/main.py"})

@@ -37,9 +37,9 @@ Graphify pioneered "drop in a folder, get a knowledge graph." Topolox takes that
 | **Storage** | Static `graph.json` + in-memory NetworkX | Embedded **Kùzu** (graph) + **LanceDB** (vectors), on disk |
 | **Retrieval** | Lexical substring + IDF + BFS/DFS traversal | **Vector** semantic search + graph traversal (hybrid) |
 | **Live updates** | Opt-in `--watch` / git hook / manual `--update` | **watchdog daemon**, ms-level incremental patches |
-| **Agent access** | Optional MCP (7 read-only tools) + Markdown reports | **MCP-native** (7 tools), `mcp install` for every agent |
+| **Agent access** | Optional MCP (7 read-only tools) + Markdown reports | **MCP-native** (10 tools), `mcp install` for every agent |
 | **Inputs** | Code **+ docs + papers + images + video** | Code — 14 languages richly, 300+ at the file level |
-| **Signature features** | Community detection, "god nodes", multi-modal RAG | Blast radius, dependency maps, context pruner |
+| **Signature features** | Community detection, "god nodes", multi-modal RAG | Blast radius, dependency maps, context pruner, resolved call graph |
 | **Concurrency** | Single graph, in-memory | Multiprocessing + asyncio, embedded DBs |
 
 **In short:** Graphify is a broad, **multi-modal, LLM-enriched** knowledge-graph builder you invoke as a skill — its graph is *richer* on inferred relationships. Topolox is a narrow, **deterministic, zero-token, always-live code engine** that any MCP agent reads from — *faster, cheaper, and instantly rebuildable*. That's the trade Topolox makes to be an always-on backend.
@@ -77,8 +77,11 @@ Graphify pioneered "drop in a folder, get a knowledge graph." Topolox takes that
 | `read_symbol(name, path)` | the exact source of one function/class — read just it, not the whole file |
 | `file_outline(path)` | a file's shape (classes/functions, signatures, docstrings) without reading it |
 | `repo_overview()` | orient on an unfamiliar repo — size, languages, and the hub files everything imports |
+| `get_callers(name, path)` | functions/methods that call a symbol — precise "what breaks if I change this?" |
+| `get_callees(name, path)` | what a function calls — trace how it works without reading it |
+| `class_hierarchy(name, path)` | a class's direct supertypes and subtypes (what it extends, what extends it) |
 
-Nudge the agent with *"Using topolox, …"* so it reaches for these instead of grepping. `deps`, `blast`, `outline`, and `overview` are graph-based and most reliable; `search`/`prune` ranking improves with the `[embeddings]` extra. The natural loop: `search`/`prune` or `outline` to find the symbol, then `read_symbol` to pull only its source.
+Nudge the agent with *"Using topolox, …"* so it reaches for these instead of grepping. `deps`, `blast`, `outline`, `overview`, and the call-graph/hierarchy tools are graph-based and most reliable; `search`/`prune` ranking improves with the `[embeddings]` extra. The natural loop: `search`/`prune` or `outline` to find the symbol, then `read_symbol` to pull only its source. The call graph (`get_callers`/`get_callees`, `class_hierarchy`) is a resolved Python call graph — links are best-effort (same-file first, then a unique repo-wide match), so ambiguous or external calls are omitted rather than guessed.
 
 ## CLI
 
@@ -91,6 +94,9 @@ topolox prune    "<question>"   # pruned, token-budgeted context
 topolox outline  <file>         # a file's symbols (its shape) without reading it
 topolox read     <symbol>       # the exact source of a symbol by name
 topolox overview                # repo size, languages, and hub files
+topolox callers  <symbol>       # functions/methods that call a symbol
+topolox callees  <symbol>       # what a symbol calls
+topolox hierarchy <class>       # a class's supertypes and subtypes
 topolox mcp install [--client claude-code|cursor|codex|gemini|vscode|windsurf|claude-desktop|all]
 topolox mcp serve               # run the MCP server over stdio (agents usually spawn this)
 ```

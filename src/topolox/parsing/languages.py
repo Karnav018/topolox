@@ -56,12 +56,13 @@ EXTENSION_TO_LANGUAGE: dict[str, str] = {
 
 @dataclass(frozen=True, slots=True)
 class LangSpec:
-    """Which tree-sitter node types denote functions, classes, and imports."""
+    """Which tree-sitter node types denote functions, classes, imports, and calls."""
 
     functions: frozenset[str]
     classes: frozenset[str]
     imports: frozenset[str]
     containers: frozenset[str] = field(default_factory=frozenset)
+    calls: frozenset[str] = field(default_factory=frozenset)
 
 
 def _spec(
@@ -69,12 +70,14 @@ def _spec(
     classes: Iterable[str],
     imports: Iterable[str],
     containers: Iterable[str] = (),
+    calls: Iterable[str] = (),
 ) -> LangSpec:
     return LangSpec(
         frozenset(functions),
         frozenset(classes),
         frozenset(imports),
         frozenset(containers),
+        frozenset(calls),
     )
 
 
@@ -83,6 +86,7 @@ LANGUAGE_SPECS: dict[str, LangSpec] = {
         ["function_definition"],
         ["class_definition"],
         ["import_statement", "import_from_statement"],
+        calls=["call"],
     ),
     "javascript": _spec(
         ["function_declaration", "method_definition", "generator_function_declaration"],

@@ -72,3 +72,29 @@ def test_extracts_docstrings() -> None:
     assert docs["Service"] == "A service class."
     assert docs["start"] == "Start the service."
     assert docs["main"] == "Run the program."
+
+
+CALL_SOURCE = b"""
+class Base:
+    def run(self):
+        return helper()
+
+
+class Child(Base):
+    pass
+
+
+def helper():
+    return len([])
+"""
+
+
+def test_extracts_calls_and_inheritance() -> None:
+    result = SymbolExtractor("python").extract("m.py", CALL_SOURCE)
+    inherits = {(e.src_id, e.dst_id) for e in result.edges if e.kind == EdgeKind.INHERITS}
+    calls = {(e.src_id, e.dst_id) for e in result.edges if e.kind == EdgeKind.CALLS}
+
+    assert ("m.py::m.Child", "Base") in inherits
+    assert ("m.py::m.Base.run", "helper") in calls
+    # builtins (len) are not recorded as calls
+    assert all(dst != "len" for _, dst in calls)
