@@ -13,7 +13,7 @@ from topolox.parsing.pool import parse_repo
 from topolox.parsing.worker import parse_file
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
     from topolox.config import Settings
     from topolox.graph.store import GraphStore
@@ -50,26 +50,38 @@ class Indexer:
         self._root: Path = settings.repo_root
         self._hashes: dict[str, str] = {}
 
-    def build(self, root: Path) -> IndexStats:
-        """Full index of ``root`` into the graph and vector stores."""
+    def build(
+        self,
+        root: Path,
+        *,
+        on_progress: Callable[[int, int], None] | None = None,
+    ) -> IndexStats:
+        """Full index of ``root`` into the graph and vector stores.
+
+        ``on_progress(completed, total)`` is invoked after each file is parsed, for a
+        caller-supplied progress display.
+        """
         start = time.perf_counter()
         self._root = root.resolve()
         self._graph.init_schema()
         self._vectors.init_schema(self._embedder.dim)
 
         files = discover_files(self._root)
+        total = len(files)
         n_files = n_nodes = n_edges = n_errors = 0
         rows: list[dict[str, object]] = []
         for result in parse_repo(files, root=self._root, max_workers=self._settings.max_workers):
             n_files += 1
-            if result.error:
+            if not result.error:
+                self._graph.upsert(result)
+                self._hashes[result.path] = result.content_hash
+                n_nodes += len(result.nodes)
+                n_edges += len(result.edges)
+                rows.extend(self._vector_rows(result))
+            else:
                 n_errors += 1
-                continue
-            self._graph.upsert(result)
-            self._hashes[result.path] = result.content_hash
-            n_nodes += len(result.nodes)
-            n_edges += len(result.edges)
-            rows.extend(self._vector_rows(result))
+            if on_progress is not None:
+                on_progress(n_files, total)
 
         if rows:
             self._vectors.upsert(rows)

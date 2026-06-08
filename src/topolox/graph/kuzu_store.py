@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Collection, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
@@ -30,6 +31,11 @@ SET s.kind = $kind,
 
 _MERGE_PLACEHOLDER = "MERGE (s:Symbol {id: $id})"
 
+# Columns added after the initial release. Applied as guarded ``ALTER TABLE ADD`` so an
+# index built by an older Topolox (whose ``Symbol`` table predates the column) migrates
+# in place instead of failing on ``SET s.<column>`` — "Cannot find property ... for s".
+_MIGRATIONS: tuple[tuple[str, str, str], ...] = (("Symbol", "docstring", "STRING"),)
+
 _MERGE_REL = """
 MATCH (a:Symbol {id: $src}), (b:Symbol {id: $dst})
 MERGE (a)-[r:Rel {kind: $kind}]->(b)
@@ -50,6 +56,10 @@ class KuzuGraphStore:
     def init_schema(self) -> None:
         for statement in SCHEMA_STATEMENTS:
             self._conn.execute(statement)
+        for table, column, column_type in _MIGRATIONS:
+            # Raises if the column already exists (fresh schema or already migrated).
+            with contextlib.suppress(RuntimeError):
+                self._conn.execute(f"ALTER TABLE {table} ADD {column} {column_type}")
 
     def upsert(self, fragment: ParseResult) -> None:
         for node in fragment.nodes:

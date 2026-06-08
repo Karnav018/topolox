@@ -39,6 +39,31 @@ def test_graph_store_persists_and_queries(tmp_path: Path) -> None:
     store.close()
 
 
+def test_init_schema_migrates_pre_docstring_db(tmp_path: Path) -> None:
+    """An index built before the docstring column existed must migrate, not crash."""
+    import kuzu
+
+    db_path = tmp_path / "graph.kuzu"
+    # Simulate an old Symbol table that predates the docstring column.
+    db = kuzu.Database(str(db_path))
+    conn = kuzu.Connection(db)
+    conn.execute(
+        "CREATE NODE TABLE Symbol(id STRING, kind STRING, name STRING, qualified_name STRING, "
+        "path STRING, language STRING, signature STRING, start_line INT64, end_line INT64, "
+        "PRIMARY KEY (id))"
+    )
+    conn.execute("CREATE REL TABLE Rel(FROM Symbol TO Symbol, kind STRING, weight DOUBLE)")
+    conn.close()
+    db.close()
+
+    store = KuzuGraphStore(db_path)
+    store.init_schema()  # adds the missing docstring column
+    store.upsert(_file_fragment("app/db.py", "app.db", []))  # SET s.docstring must not crash
+    rows = store.query("MATCH (s:Symbol {id: $id}) RETURN s.docstring AS d", {"id": "app/db.py"})
+    assert rows  # column exists and is queryable
+    store.close()
+
+
 def test_dependency_service(tmp_path: Path) -> None:
     store = KuzuGraphStore(tmp_path / "graph.kuzu")
     store.init_schema()
