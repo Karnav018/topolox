@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Three new MCP tools (and matching CLI commands), bringing the agent toolset to seven:
+  - **`read_symbol(name, path)`** / `topolox read` — returns the exact source of a single function/class/method located by name (or qualified name), so an agent reads just that symbol instead of the whole file. Closes the loop from `prune_context`/`search_architecture_graph` (find the symbol) to reading only it.
+  - **`file_outline(path)`** / `topolox outline` — a file's shape (its classes/functions/methods with signatures, docstrings, and line ranges) without reading the file.
+  - **`repo_overview()`** / `topolox overview` — orient on an unfamiliar repo: file/symbol counts, language mix, and the hub files most other files import (the high-impact places to start).
+- **Docstrings are now extracted and persisted.** Python module/class/function docstrings flow through to the graph (`Symbol.docstring`) and surface in `file_outline`. Previously the `SymbolNode.docstring` field was dropped — the Kùzu schema had no column for it.
+
 ## [0.1.4] - 2026-06-06
 
 ### Added

@@ -40,3 +40,61 @@ class BlastRadiusReport(BaseModel):
     impacted_tests: list[str] = Field(default_factory=list)
     impacted_symbols: list[str] = Field(default_factory=list)
     max_depth: int = 0
+
+
+class SymbolDetail(BaseModel):
+    """A single symbol located precisely, with its exact source slice."""
+
+    id: str
+    name: str
+    qualified_name: str
+    kind: str
+    path: str
+    language: str = ""
+    signature: str | None = None
+    start_line: int = 0
+    end_line: int = 0
+    source: str = ""
+
+
+class SymbolSource(BaseModel):
+    """The result of ``read_symbol`` — one match, or several on a name collision."""
+
+    query: str
+    matches: list[SymbolDetail] = Field(default_factory=list)
+
+
+class OutlineSymbol(BaseModel):
+    """One symbol in a file outline (no body — just shape)."""
+
+    name: str
+    qualified_name: str
+    kind: str
+    signature: str | None = None
+    docstring: str | None = None
+    start_line: int = 0
+    end_line: int = 0
+
+
+class FileOutline(BaseModel):
+    """The symbol outline of a single file — its shape without reading it."""
+
+    path: str
+    language: str = ""
+    symbols: list[OutlineSymbol] = Field(default_factory=list)
+
+
+class HubFile(BaseModel):
+    """A file ranked by how many other indexed files import it."""
+
+    path: str
+    dependents: int
+
+
+class RepoOverview(BaseModel):
+    """A top-level architectural summary of the indexed repository."""
+
+    files: int = 0
+    symbols: int = 0
+    languages: dict[str, int] = Field(default_factory=dict)
+    hubs: list[HubFile] = Field(default_factory=list)

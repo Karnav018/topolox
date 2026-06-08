@@ -10,7 +10,10 @@ if TYPE_CHECKING:
     from topolox.graph.store import GraphStore
     from topolox.query.blast_radius import BlastRadiusService
     from topolox.query.dependencies import DependencyService
+    from topolox.query.outline import OutlineService
+    from topolox.query.overview import OverviewService
     from topolox.query.pruner import ContextPruner
+    from topolox.query.source import SymbolReader
     from topolox.vectors.store import VectorStore
 
 
@@ -24,3 +27,6 @@ class AppContext:
     dependencies: DependencyService
     pruner: ContextPruner
     blast: BlastRadiusService
+    reader: SymbolReader
+    outline: OutlineService
+    overview: OverviewService

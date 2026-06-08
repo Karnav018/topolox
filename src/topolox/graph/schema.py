@@ -11,6 +11,7 @@ SCHEMA_STATEMENTS: tuple[str, ...] = (
         path STRING,
         language STRING,
         signature STRING,
+        docstring STRING,
         start_line INT64,
         end_line INT64,
         PRIMARY KEY (id)

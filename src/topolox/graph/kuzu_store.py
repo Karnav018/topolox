@@ -23,6 +23,7 @@ SET s.kind = $kind,
     s.path = $path,
     s.language = $language,
     s.signature = $signature,
+    s.docstring = $docstring,
     s.start_line = $start_line,
     s.end_line = $end_line
 """
@@ -62,6 +63,7 @@ class KuzuGraphStore:
                     "path": node.path,
                     "language": node.language,
                     "signature": node.signature or "",
+                    "docstring": node.docstring or "",
                     "start_line": node.span.start_line,
                     "end_line": node.span.end_line,
                 },

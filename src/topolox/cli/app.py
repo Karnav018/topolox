@@ -274,6 +274,86 @@ def blast(
         typer.echo("    (none)")
 
 
+def _require_index() -> Path:
+    graph_db = Path(".topolox") / "graph.kuzu"
+    if not graph_db.exists():
+        typer.echo("error: no index found here. Run 'topolox index .' first.", err=True)
+        raise typer.Exit(code=1)
+    return graph_db
+
+
+@app.command()
+def read(
+    name: Annotated[str, typer.Argument(help="Symbol name or qualified name.")],
+    path: Annotated[
+        str | None, typer.Option(help="Restrict to this file (disambiguate a name).")
+    ] = None,
+) -> None:
+    """Print the exact source of a symbol by name."""
+    from topolox.graph.kuzu_store import KuzuGraphStore
+    from topolox.query.source import SymbolReader
+
+    graph = KuzuGraphStore(_require_index(), read_only=True)
+    try:
+        result = SymbolReader(graph, Path.cwd()).read(name, path=path)
+    finally:
+        graph.close()
+
+    if not result.matches:
+        typer.echo(f"(no symbol named {name!r} in the index)")
+        return
+    for match in result.matches:
+        typer.echo(f"# {match.path}:{match.start_line}  ({match.kind} {match.qualified_name})")
+        typer.echo(match.source or "    (source unavailable)")
+        typer.echo("")
+
+
+@app.command()
+def outline(
+    file: Annotated[str, typer.Argument(help="File to outline.")],
+) -> None:
+    """Show a file's symbols (its shape) without reading the file."""
+    from topolox.graph.kuzu_store import KuzuGraphStore
+    from topolox.query.outline import OutlineService
+
+    graph = KuzuGraphStore(_require_index(), read_only=True)
+    try:
+        result = OutlineService(graph).of_file(file)
+    finally:
+        graph.close()
+
+    typer.echo(f"{result.path} ({result.language or 'unknown'})")
+    for symbol in result.symbols:
+        label = symbol.signature or symbol.name
+        doc = f"  — {symbol.docstring}" if symbol.docstring else ""
+        typer.echo(f"  {symbol.start_line:>5}  {symbol.kind:<8} {label}{doc}")
+    if not result.symbols:
+        typer.echo("  (no symbols — is the file indexed?)")
+
+
+@app.command()
+def overview() -> None:
+    """Summarize the indexed repo: size, languages, and hub files."""
+    from topolox.graph.kuzu_store import KuzuGraphStore
+    from topolox.query.overview import OverviewService
+
+    graph = KuzuGraphStore(_require_index(), read_only=True)
+    try:
+        report = OverviewService(graph).summary()
+    finally:
+        graph.close()
+
+    typer.echo(f"Files: {report.files}   Symbols: {report.symbols}")
+    if report.languages:
+        langs = ", ".join(f"{lang} {count}" for lang, count in report.languages.items())
+        typer.echo(f"Languages: {langs}")
+    typer.echo("Hub files (most imported):")
+    for hub in report.hubs:
+        typer.echo(f"  {hub.dependents:>4}  {hub.path}")
+    if not report.hubs:
+        typer.echo("  (none resolved)")
+
+
 @app.command()
 def ui() -> None:
     """Launch the Textual TUI dashboard."""

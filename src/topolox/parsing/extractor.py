@@ -95,6 +95,41 @@ def _node_name(node: Node, source: bytes) -> str:
     return ""
 
 
+_DOCSTRING_CAP = 500
+
+
+def _string_value(node: Node, source: bytes) -> str:
+    parts = [_text(c, source) for c in node.named_children if c.type == "string_content"]
+    if parts:
+        return "".join(parts).strip()
+    text = _text(node, source).strip().lstrip("rRbBuUfF")
+    for quote in ('"""', "'''", '"', "'"):
+        if text.startswith(quote) and text.endswith(quote) and len(text) >= 2 * len(quote):
+            return text[len(quote) : -len(quote)].strip()
+    return text.strip()
+
+
+def _docstring(node: Node, source: bytes, language: str) -> str | None:
+    """Return the leading docstring of a Python def/class/module, if any.
+
+    The grammar exposes a docstring as the first ``string`` in the body (or, on
+    older versions, an ``expression_statement`` wrapping it).
+    """
+    if language != "python":
+        return None
+    body = node.child_by_field_name("body")
+    block = body if body is not None else node
+    first = next(iter(block.named_children), None)
+    if first is not None and first.type == "expression_statement":
+        first = next(iter(first.named_children), None)
+    if first is None or first.type != "string":
+        return None
+    text = _string_value(first, source)
+    if not text:
+        return None
+    return text[: _DOCSTRING_CAP - 1] + "…" if len(text) > _DOCSTRING_CAP else text
+
+
 def _import_target(node: Node, source: bytes) -> str | None:
     for field_name in _IMPORT_FIELDS:
         child = node.child_by_field_name(field_name)
@@ -131,6 +166,7 @@ class SymbolExtractor:
                 path=path,
                 language=language,
                 span=_span(root),
+                docstring=_docstring(root, source, language),
             )
         ]
         edges: list[Edge] = []
@@ -156,6 +192,7 @@ class SymbolExtractor:
                             path=path,
                             language=language,
                             span=_span(child),
+                            docstring=_docstring(child, source, language),
                         )
                     )
                     edges.append(Edge(src_id=parent_id, dst_id=sid, kind=EdgeKind.DEFINES))
@@ -178,6 +215,7 @@ class SymbolExtractor:
                             language=language,
                             span=_span(child),
                             signature=_signature(child, name, source),
+                            docstring=_docstring(child, source, language),
                         )
                     )
                     edges.append(Edge(src_id=parent_id, dst_id=sid, kind=EdgeKind.DEFINES))
