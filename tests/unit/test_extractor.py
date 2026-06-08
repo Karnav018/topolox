@@ -48,3 +48,27 @@ def test_worker_parses_real_file(sample_repo: Path) -> None:
     assert result.error is None
     names = {n.name for n in result.nodes}
     assert {"login", "verify"} <= names
+
+
+DOC_SOURCE = b'''"""Module docstring."""
+
+
+class Service:
+    """A service class."""
+
+    def start(self) -> None:
+        """Start the service."""
+
+
+def main() -> None:
+    """Run the program."""
+'''
+
+
+def test_extracts_docstrings() -> None:
+    result = SymbolExtractor("python").extract("pkg/svc.py", DOC_SOURCE)
+    docs = {node.name: node.docstring for node in result.nodes}
+    assert docs["svc.py"] == "Module docstring."
+    assert docs["Service"] == "A service class."
+    assert docs["start"] == "Start the service."
+    assert docs["main"] == "Run the program."

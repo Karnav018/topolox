@@ -48,6 +48,9 @@ async def test_mcp_server_exposes_and_runs_tools(tmp_path: Path) -> None:
             "analyze_blast_radius",
             "prune_context",
             "search_architecture_graph",
+            "read_symbol",
+            "file_outline",
+            "repo_overview",
         } <= names
 
         deps = await client.call_tool("get_file_dependencies", {"path": "app/main.py"})
@@ -55,6 +58,9 @@ async def test_mcp_server_exposes_and_runs_tools(tmp_path: Path) -> None:
 
         blast = await client.call_tool("analyze_blast_radius", {"changed_files": ["app/db.py"]})
         assert "app/main.py" in str(blast.data)
+
+        overview = await client.call_tool("repo_overview", {})
+        assert "app/db.py" in str(overview.data)  # the hub everything imports
 
 
 def test_install_writes_client_configs(tmp_path: Path) -> None:

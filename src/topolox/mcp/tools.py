@@ -9,7 +9,14 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from topolox.models.query import BlastRadiusReport, DependencyMap, PrunedContext
+from topolox.models.query import (
+    BlastRadiusReport,
+    DependencyMap,
+    FileOutline,
+    PrunedContext,
+    RepoOverview,
+    SymbolSource,
+)
 
 if TYPE_CHECKING:
     from fastmcp import FastMCP
@@ -42,10 +49,31 @@ def register_tools(server: FastMCP, ctx: AppContext) -> None:
         """Find where something lives by meaning + structure — use instead of grepping."""
         return await asyncio.to_thread(ctx.pruner.prune, query, token_budget=100_000, top_k=limit)
 
+    async def read_symbol(name: str, path: str | None = None) -> SymbolSource:
+        """The exact source of one function/class/method by name (or qualified name),
+        instead of reading the whole file. Pass ``path`` to disambiguate a name that
+        collides across files. Pair with prune_context / search_architecture_graph:
+        find the symbol, then read only it."""
+        return await asyncio.to_thread(ctx.reader.read, name, path=path)
+
+    async def file_outline(path: str) -> FileOutline:
+        """A file's shape — its classes/functions/methods with signatures, docstrings,
+        and line ranges — without reading the file. Use to understand a file cheaply,
+        then read_symbol the parts you need. ``path`` is repo-relative POSIX."""
+        return await asyncio.to_thread(ctx.outline.of_file, path)
+
+    async def repo_overview() -> RepoOverview:
+        """Orient on an unfamiliar repo: file/symbol counts, language mix, and the hub
+        files most other files import (the high-impact places to start)."""
+        return await asyncio.to_thread(ctx.overview.summary)
+
     for tool in (
         get_file_dependencies,
         analyze_blast_radius,
         prune_context,
         search_architecture_graph,
+        read_symbol,
+        file_outline,
+        repo_overview,
     ):
         server.tool(tool)

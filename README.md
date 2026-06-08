@@ -37,7 +37,7 @@ Graphify pioneered "drop in a folder, get a knowledge graph." Topolox takes that
 | **Storage** | Static `graph.json` + in-memory NetworkX | Embedded **Kùzu** (graph) + **LanceDB** (vectors), on disk |
 | **Retrieval** | Lexical substring + IDF + BFS/DFS traversal | **Vector** semantic search + graph traversal (hybrid) |
 | **Live updates** | Opt-in `--watch` / git hook / manual `--update` | **watchdog daemon**, ms-level incremental patches |
-| **Agent access** | Optional MCP (7 read-only tools) + Markdown reports | **MCP-native** (4 tools), `mcp install` for every agent |
+| **Agent access** | Optional MCP (7 read-only tools) + Markdown reports | **MCP-native** (7 tools), `mcp install` for every agent |
 | **Inputs** | Code **+ docs + papers + images + video** | Code — 14 languages richly, 300+ at the file level |
 | **Signature features** | Community detection, "god nodes", multi-modal RAG | Blast radius, dependency maps, context pruner |
 | **Concurrency** | Single graph, in-memory | Multiprocessing + asyncio, embedded DBs |
@@ -66,7 +66,7 @@ Graphify pioneered "drop in a folder, get a knowledge graph." Topolox takes that
 
 **Agents** — `topolox mcp install` registers the MCP server with **Claude Code, Cursor, OpenAI Codex CLI, Gemini CLI, VS Code, Windsurf, and Claude Desktop** (and any other MCP client — it's a standard stdio MCP server).
 
-## The four tools your agent gets
+## The tools your agent gets
 
 | Tool | Use it for |
 | :--- | :--- |
@@ -74,17 +74,23 @@ Graphify pioneered "drop in a folder, get a knowledge graph." Topolox takes that
 | `analyze_blast_radius(changed_files, max_depth)` | which files/tests a change would impact |
 | `prune_context(prompt, token_budget)` | the most relevant symbols/files for a prompt |
 | `search_architecture_graph(query, limit)` | semantic + structural search over the codebase |
+| `read_symbol(name, path)` | the exact source of one function/class — read just it, not the whole file |
+| `file_outline(path)` | a file's shape (classes/functions, signatures, docstrings) without reading it |
+| `repo_overview()` | orient on an unfamiliar repo — size, languages, and the hub files everything imports |
 
-Nudge the agent with *"Using topolox, …"* so it reaches for these instead of grepping. `deps` and `blast` are graph-based and most reliable; `search`/`prune` ranking improves with the `[embeddings]` extra.
+Nudge the agent with *"Using topolox, …"* so it reaches for these instead of grepping. `deps`, `blast`, `outline`, and `overview` are graph-based and most reliable; `search`/`prune` ranking improves with the `[embeddings]` extra. The natural loop: `search`/`prune` or `outline` to find the symbol, then `read_symbol` to pull only its source.
 
 ## CLI
 
 ```bash
 topolox index .                 # build / refresh the index in .topolox/
 topolox index --dry-run .       # preview what gets parsed (no writes)
-topolox deps   <file>           # dependencies + dependents of a file
-topolox blast  <file...>        # blast radius of changing file(s)
-topolox prune  "<question>"     # pruned, token-budgeted context
+topolox deps     <file>         # dependencies + dependents of a file
+topolox blast    <file...>      # blast radius of changing file(s)
+topolox prune    "<question>"   # pruned, token-budgeted context
+topolox outline  <file>         # a file's symbols (its shape) without reading it
+topolox read     <symbol>       # the exact source of a symbol by name
+topolox overview                # repo size, languages, and hub files
 topolox mcp install [--client claude-code|cursor|codex|gemini|vscode|windsurf|claude-desktop|all]
 topolox mcp serve               # run the MCP server over stdio (agents usually spawn this)
 ```
