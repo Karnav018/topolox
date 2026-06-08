@@ -63,6 +63,7 @@ class LangSpec:
     imports: frozenset[str]
     containers: frozenset[str] = field(default_factory=frozenset)
     calls: frozenset[str] = field(default_factory=frozenset)
+    func_bindings: frozenset[str] = field(default_factory=frozenset)
 
 
 def _spec(
@@ -71,6 +72,7 @@ def _spec(
     imports: Iterable[str],
     containers: Iterable[str] = (),
     calls: Iterable[str] = (),
+    func_bindings: Iterable[str] = (),
 ) -> LangSpec:
     return LangSpec(
         frozenset(functions),
@@ -78,6 +80,7 @@ def _spec(
         frozenset(imports),
         frozenset(containers),
         frozenset(calls),
+        frozenset(func_bindings),
     )
 
 
@@ -93,18 +96,21 @@ LANGUAGE_SPECS: dict[str, LangSpec] = {
         ["class_declaration"],
         ["import_statement"],
         calls=["call_expression", "new_expression"],
+        func_bindings=["variable_declarator", "public_field_definition", "field_definition"],
     ),
     "typescript": _spec(
         ["function_declaration", "method_definition", "function_signature"],
         ["class_declaration", "interface_declaration", "enum_declaration"],
         ["import_statement"],
         calls=["call_expression", "new_expression"],
+        func_bindings=["variable_declarator", "public_field_definition", "field_definition"],
     ),
     "tsx": _spec(
         ["function_declaration", "method_definition"],
         ["class_declaration", "interface_declaration", "enum_declaration"],
         ["import_statement"],
         calls=["call_expression", "new_expression"],
+        func_bindings=["variable_declarator", "public_field_definition", "field_definition"],
     ),
     "go": _spec(
         ["function_declaration", "method_declaration"],

@@ -141,3 +141,34 @@ def test_extracts_calls_and_inheritance_typescript() -> None:
     assert ("svc.ts::svc.Svc", "Named") in inherits
     assert ("svc.ts::svc.Svc.run", "doThing") in calls
     assert ("svc.ts::svc.Svc.run", "Helper") in calls  # new Helper()
+
+
+ARROW_SOURCE = b"""
+const build = (n) => { return helper(n); };
+export const Graph = (props) => { return build(props.count); };
+const helper = (n) => { return n * 2; };
+class C {
+  handler = () => { return this.run(); };
+  run() { return build(1); }
+}
+const notAFunction = 42;
+"""
+
+
+def test_extracts_arrow_and_function_expression_bindings() -> None:
+    result = SymbolExtractor("tsx").extract("graph.tsx", ARROW_SOURCE)
+    by_kind: dict[NodeKind, set[str]] = {}
+    for node in result.nodes:
+        by_kind.setdefault(node.kind, set()).add(node.qualified_name)
+
+    # const arrows become functions; a class-field arrow becomes a method
+    assert {"graph.build", "graph.Graph", "graph.helper"} <= by_kind[NodeKind.FUNCTION]
+    assert "graph.C.handler" in by_kind[NodeKind.METHOD]
+    # a non-function binding is not a symbol
+    assert "graph.notAFunction" not in by_kind.get(NodeKind.FUNCTION, set())
+
+    calls = {(e.src_id, e.dst_id) for e in result.edges if e.kind == EdgeKind.CALLS}
+    # calls inside arrow bodies are now attributed to the bound name
+    assert ("graph.tsx::graph.Graph", "build") in calls
+    assert ("graph.tsx::graph.build", "helper") in calls
+    assert ("graph.tsx::graph.C.handler", "run") in calls  # this.run() inside a field arrow
