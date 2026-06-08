@@ -14,13 +14,15 @@ if TYPE_CHECKING:
 
 _MATCH = (
     "MATCH (s:Symbol {kind: 'class'}) WHERE s.path <> '' "
-    "AND (s.name = $q OR s.qualified_name = $q OR s.id = $q) "
+    "AND (s.name = $q OR s.qualified_name = $q OR s.id = $q "
+    "OR s.qualified_name ENDS WITH $qsuffix) "
     "RETURN s.id AS id, s.qualified_name AS qualified_name"
 )
 
 _MATCH_IN_FILE = (
     "MATCH (s:Symbol {path: $path, kind: 'class'}) "
-    "WHERE (s.name = $q OR s.qualified_name = $q OR s.id = $q) "
+    "WHERE (s.name = $q OR s.qualified_name = $q OR s.id = $q "
+    "OR s.qualified_name ENDS WITH $qsuffix) "
     "RETURN s.id AS id, s.qualified_name AS qualified_name"
 )
 
@@ -56,10 +58,12 @@ class HierarchyService:
 
     def of_class(self, name: str, *, path: str | None = None) -> ClassHierarchy:
         """Return the direct base classes and direct subclasses of ``name``."""
+        qsuffix = "." + name
         if path:
-            matches = self._graph.query(_MATCH_IN_FILE, {"q": name, "path": path})
+            params = {"q": name, "qsuffix": qsuffix, "path": path}
+            matches = self._graph.query(_MATCH_IN_FILE, params)
         else:
-            matches = self._graph.query(_MATCH, {"q": name})
+            matches = self._graph.query(_MATCH, {"q": name, "qsuffix": qsuffix})
 
         supertypes: dict[str, SymbolRef] = {}
         subtypes: dict[str, SymbolRef] = {}

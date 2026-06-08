@@ -20,13 +20,15 @@ _CALLABLE_KINDS = "['function', 'method', 'class']"
 
 _MATCH = (
     f"MATCH (s:Symbol) WHERE s.path <> '' AND s.kind IN {_CALLABLE_KINDS} "
-    "AND (s.name = $q OR s.qualified_name = $q OR s.id = $q) "
+    "AND (s.name = $q OR s.qualified_name = $q OR s.id = $q "
+    "OR s.qualified_name ENDS WITH $qsuffix) "
     "RETURN s.id AS id, s.qualified_name AS qualified_name"
 )
 
 _MATCH_IN_FILE = (
     f"MATCH (s:Symbol {{path: $path}}) WHERE s.kind IN {_CALLABLE_KINDS} "
-    "AND (s.name = $q OR s.qualified_name = $q OR s.id = $q) "
+    "AND (s.name = $q OR s.qualified_name = $q OR s.id = $q "
+    "OR s.qualified_name ENDS WITH $qsuffix) "
     "RETURN s.id AS id, s.qualified_name AS qualified_name"
 )
 
@@ -52,10 +54,11 @@ class SymbolImpactService:
 
     def analyze(self, name: str, *, path: str | None = None, max_depth: int = 4) -> SymbolImpact:
         """Return the symbols, files, and tests that transitively depend on ``name``."""
+        qsuffix = "." + name
         if path:
-            seeds = self._graph.query(_MATCH_IN_FILE, {"q": name, "path": path})
+            seeds = self._graph.query(_MATCH_IN_FILE, {"q": name, "qsuffix": qsuffix, "path": path})
         else:
-            seeds = self._graph.query(_MATCH, {"q": name})
+            seeds = self._graph.query(_MATCH, {"q": name, "qsuffix": qsuffix})
 
         seed_ids = {str(row["id"]) for row in seeds}
         impacted: dict[str, SymbolRef] = {}

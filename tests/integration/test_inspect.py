@@ -70,6 +70,18 @@ def test_read_symbol_disambiguates_by_path(tmp_path: Path) -> None:
     store.close()
 
 
+def test_read_symbol_resolves_class_method_form(tmp_path: Path) -> None:
+    store = _index(tmp_path)
+    reader = SymbolReader(store, tmp_path)
+    # The "Class.method" form is a dotted suffix of the qualified name.
+    result = reader.read("Service.start")
+    assert [m.qualified_name for m in result.matches] == ["pkg.svc.Service.start"]
+    assert "def start(self)" in result.matches[0].source
+    # Boundary-safe: a partial component is not a match.
+    assert reader.read("ce.start").matches == []
+    store.close()
+
+
 def test_file_outline_lists_shape_with_docstrings(tmp_path: Path) -> None:
     store = _index(tmp_path)
     outline = OutlineService(store).of_file("pkg/svc.py")

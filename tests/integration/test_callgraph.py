@@ -75,6 +75,18 @@ def test_class_hierarchy(tmp_path: Path) -> None:
     store.close()
 
 
+def test_resolves_class_method_form(tmp_path: Path) -> None:
+    store = _graph(tmp_path)
+    calls = CallGraphService(store)
+    # "Class.method" is a dotted suffix of the qualified name, not an exact match.
+    report = calls.callees("Dog.bark")
+    assert report.matched == ["zoo.Dog.bark"]
+    assert "woof" in {n.name for n in report.neighbors}
+    # Boundary-safe: a partial path component does not resolve.
+    assert calls.callees("og.bark").matched == []
+    store.close()
+
+
 def test_unknown_symbol_is_empty(tmp_path: Path) -> None:
     store = _graph(tmp_path)
     report = CallGraphService(store).callees("does_not_exist")

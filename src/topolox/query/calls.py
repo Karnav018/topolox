@@ -19,13 +19,15 @@ _CALLABLE_KINDS = "['function', 'method', 'class']"
 
 _MATCH = (
     f"MATCH (s:Symbol) WHERE s.path <> '' AND s.kind IN {_CALLABLE_KINDS} "
-    "AND (s.name = $q OR s.qualified_name = $q OR s.id = $q) "
+    "AND (s.name = $q OR s.qualified_name = $q OR s.id = $q "
+    "OR s.qualified_name ENDS WITH $qsuffix) "
     "RETURN s.id AS id, s.qualified_name AS qualified_name"
 )
 
 _MATCH_IN_FILE = (
     f"MATCH (s:Symbol {{path: $path}}) WHERE s.kind IN {_CALLABLE_KINDS} "
-    "AND (s.name = $q OR s.qualified_name = $q OR s.id = $q) "
+    "AND (s.name = $q OR s.qualified_name = $q OR s.id = $q "
+    "OR s.qualified_name ENDS WITH $qsuffix) "
     "RETURN s.id AS id, s.qualified_name AS qualified_name"
 )
 
@@ -68,10 +70,12 @@ class CallGraphService:
         return self._report(name, path, _CALLERS, "callers")
 
     def _report(self, name: str, path: str | None, cypher: str, direction: str) -> CallReport:
+        qsuffix = "." + name
         if path:
-            matches = self._graph.query(_MATCH_IN_FILE, {"q": name, "path": path})
+            params = {"q": name, "qsuffix": qsuffix, "path": path}
+            matches = self._graph.query(_MATCH_IN_FILE, params)
         else:
-            matches = self._graph.query(_MATCH, {"q": name})
+            matches = self._graph.query(_MATCH, {"q": name, "qsuffix": qsuffix})
 
         neighbors: dict[str, SymbolRef] = {}
         for match in matches:

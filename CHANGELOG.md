@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-06-08
+
 ### Fixed
+- **Semantic search and context pruning now rank by relevance offline.** When `fastembed` wasn't installed, `prune_context` / `search_architecture_graph` fell back to a zero-vector embedder, so every query returned the same arbitrary set — a nonsense query scored the same hits as a real one. The default is now a deterministic, dependency-free `HashingEmbedder` (subword + character-trigram feature hashing, L2-normalized) that gives genuine lexical relevance; `fastembed` remains the optional higher-quality upgrade. Re-index to populate the new vectors.
+- **`read_symbol`, `get_callers` / `get_callees`, `class_hierarchy`, and `analyze_symbol_impact` now resolve the `Class.method` form.** Lookups only matched a bare name or the full dotted qualified name, so a natural `BlastRadiusService.simulate` returned no matches. Resolution now also accepts a dotted suffix of the qualified name, boundary-safe so a partial component (`og.bark`) doesn't false-match.
 - **`topolox --version` now reports the real version.** `__version__` was hard-coded to `0.1.4` and never bumped, so every release since misreported it; it now derives from the installed package metadata (`importlib.metadata.version`).
 
 ## [0.2.1] - 2026-06-08
@@ -81,7 +85,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI skeleton (`topolox`) and module stubs for parser, stores, indexer, query, daemon, MCP, and TUI.
 - Open-source project files: README, license, contributing guide, code of conduct, security policy, CI, and issue/PR templates.
 
-[Unreleased]: https://github.com/Karnav018/topolox/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/Karnav018/topolox/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/Karnav018/topolox/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/Karnav018/topolox/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/Karnav018/topolox/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/Karnav018/topolox/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/Karnav018/topolox/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Karnav018/topolox/compare/v0.1.1...v0.1.2

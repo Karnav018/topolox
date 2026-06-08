@@ -18,7 +18,8 @@ if TYPE_CHECKING:
 
 _MATCH = (
     "MATCH (s:Symbol) "
-    "WHERE s.kind <> 'file' AND (s.name = $q OR s.qualified_name = $q OR s.id = $q) "
+    "WHERE s.kind <> 'file' AND (s.name = $q OR s.qualified_name = $q OR s.id = $q "
+    "OR s.qualified_name ENDS WITH $qsuffix) "
     "RETURN s.id AS id, s.name AS name, s.qualified_name AS qualified_name, s.kind AS kind, "
     "s.path AS path, s.language AS language, s.signature AS signature, "
     "s.start_line AS start_line, s.end_line AS end_line "
@@ -27,7 +28,8 @@ _MATCH = (
 
 _MATCH_IN_FILE = (
     "MATCH (s:Symbol {path: $path}) "
-    "WHERE s.kind <> 'file' AND (s.name = $q OR s.qualified_name = $q OR s.id = $q) "
+    "WHERE s.kind <> 'file' AND (s.name = $q OR s.qualified_name = $q OR s.id = $q "
+    "OR s.qualified_name ENDS WITH $qsuffix) "
     "RETURN s.id AS id, s.name AS name, s.qualified_name AS qualified_name, s.kind AS kind, "
     "s.path AS path, s.language AS language, s.signature AS signature, "
     "s.start_line AS start_line, s.end_line AS end_line "
@@ -51,10 +53,11 @@ class SymbolReader:
         (``SymbolExtractor.extract``), or a full symbol id. Pass ``path`` to
         disambiguate when a bare name collides across files.
         """
+        qsuffix = "." + name
         if path:
-            rows = self._graph.query(_MATCH_IN_FILE, {"q": name, "path": path})
+            rows = self._graph.query(_MATCH_IN_FILE, {"q": name, "qsuffix": qsuffix, "path": path})
         else:
-            rows = self._graph.query(_MATCH, {"q": name})
+            rows = self._graph.query(_MATCH, {"q": name, "qsuffix": qsuffix})
 
         matches = [self._detail(row) for row in rows[:_MAX_MATCHES]]
         return SymbolSource(query=name, matches=matches)
