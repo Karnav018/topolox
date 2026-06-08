@@ -10,7 +10,42 @@ import typer
 from topolox import __version__
 
 if TYPE_CHECKING:
+    from topolox.index.indexer import Indexer, IndexStats
     from topolox.models.query import SymbolRef
+
+
+def _build_with_progress(indexer: Indexer, root: Path) -> IndexStats:
+    """Run a full index, showing a live progress bar on an interactive terminal."""
+    import sys
+
+    if not sys.stdout.isatty():
+        typer.echo(f"Indexing {root} ...")
+        return indexer.build(root)
+
+    from rich.progress import (
+        BarColumn,
+        MofNCompleteColumn,
+        Progress,
+        SpinnerColumn,
+        TextColumn,
+        TimeElapsedColumn,
+    )
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[bold]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TimeElapsedColumn(),
+    ) as progress:
+        task = progress.add_task("Discovering files", total=None)
+
+        def on_progress(done: int, total: int) -> None:
+            description = "Finalizing" if total and done >= total else "Parsing files"
+            progress.update(task, completed=done, total=total, description=description)
+
+        return indexer.build(root, on_progress=on_progress)
+
 
 app = typer.Typer(
     name="topolox",
@@ -91,7 +126,7 @@ def index(
     vectors = LanceDBVectorStore(data_dir / "vectors.lance")
     indexer = Indexer(load_settings(), graph, vectors, default_embedder())
     try:
-        stats = indexer.build(root)
+        stats = _build_with_progress(indexer, root)
     finally:
         graph.close()
         vectors.close()
