@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`topolox --version` now reports the real version.** `__version__` was hard-coded to `0.1.4` and never bumped, so every release since misreported it; it now derives from the installed package metadata (`importlib.metadata.version`).
+
 ## [0.2.1] - 2026-06-08
 
 ### Added
