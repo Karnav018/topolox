@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-08
+
 ### Added
 - Three new MCP tools (and matching CLI commands), bringing the agent toolset to seven:
   - **`read_symbol(name, path)`** / `topolox read` — returns the exact source of a single function/class/method located by name (or qualified name), so an agent reads just that symbol instead of the whole file. Closes the loop from `prune_context`/`search_architecture_graph` (find the symbol) to reading only it.
@@ -23,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Arrow functions and function expressions are now first-class symbols.** A name bound to an arrow / function expression — `const Comp = () => {…}`, `export const f = …`, or a class-field arrow `handler = () => {…}` — is extracted as a function/method, and the calls in its body are attributed to it. This closes the call graph for React/TSX and other arrow-heavy code (e.g. `get_callers` of a helper now finds the components that use it). Only truly anonymous inline callbacks remain unattributed.
 - **Import-aware call/inheritance resolution.** When a called (or extended) name is defined in several files, resolution now prefers the definition the caller's file actually imports — before falling back to a unique repo-wide match. This correctly links common names like `build()` / `run()` / `query()` across files instead of dropping them: on this repo, ~12% of resolved internal call edges (64 of 535) are cross-file calls to a globally-ambiguous name that only import-aware resolution can place.
 - **Call graph extended to Go, Rust, and Java.** `CALLS` edges are now extracted for Go (`call_expression`, incl. `obj.Method()` selectors), Rust (`call_expression`, incl. `self.method()` field calls and `mod::func()` paths), and Java (`method_invocation` and `new X()` `object_creation_expression`); Java also gets `INHERITS` from `extends` and `implements`. The call graph now spans seven languages (Python, JS, TS, TSX, Go, Rust, Java) — `get_callers`/`get_callees`, `class_hierarchy`, and `analyze_symbol_impact` all light up from the new edges, no tool changes.
+
+### Fixed
+- **Source distribution is no longer bloated.** The sdist had no file scoping, so hatchling bundled the entire tree — the Astro `site/` and the `video/` promo project, ~340 MB — which would be rejected by PyPI. The sdist now ships only the package, tests, and docs (~54 KB).
 
 ## [0.1.4] - 2026-06-06
 

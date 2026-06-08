@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "topolox"
-version = "0.1.4"
+version = "0.2.0"
 description = "The topological memory and architecture layer for AI coding agents."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -73,6 +73,20 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/topolox"]
+
+# Keep the sdist lean — without this hatchling slurps the whole tree (the Astro
+# `site/` and the `video/` promo project, ~340 MB) instead of just the package.
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/topolox",
+    "tests",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "ROADMAP.md",
+    "pyproject.toml",
+]
+exclude = ["site", "video", "dist", ".topolox"]
 
 [tool.ruff]
 line-length = 100
