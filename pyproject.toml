@@ -37,7 +37,7 @@ classifiers = [
 ]
 dependencies = [
     "kuzu==0.11.3",
-    "lancedb>=0.33,<0.34",
+    "lancedb>=0.33,<0.37",
     "tree-sitter>=0.25,<0.26",
     "tree-sitter-language-pack>=1.8",
     "fastmcp>=3.4,<4",
